@@ -41,9 +41,9 @@ public:
 
 	void memoryAssambly(std::vector<byte>asm_code);
 
-	void changeUserName();
+	void changeUserName(CStringA name);
 
-	void threeSpeed(bool on);
+	void threeSpeed(int attack, int casting, int move);
 
 	void summonFigure(int code);
 

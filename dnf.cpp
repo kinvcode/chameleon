@@ -217,31 +217,25 @@ void DNF::memoryAssambly(std::vector<byte>asm_code)
 	asyncExecute = false;
 }
 
-void DNF::changeUserName()
+void DNF::changeUserName(CStringA name)
 {
 	__int64 userNameAddress = readLong(readLong(C_USER) + C_NAME_OFFSET);
 	if (userNameAddress)
 	{
-		if (writeByteArray(userNameAddress, Ansi2Unicode("速攻团队-变色龙"))) {
+		if (writeByteArray(userNameAddress, Ansi2Unicode(name))) {
 			MainDlg->Log(L"修改名字成功");
 		}
 	}
 }
 
-void DNF::threeSpeed(bool on)
+void DNF::threeSpeed(int attack, int casting, int move)
 {
 	long long shoePointer = readLong(C_USER) + C_SHOE_OFFSET; // 鞋子指针
 
-	if (on) {
-		encrypt(readLong(shoePointer) + C_ATTACK_SPEED, 2000); // 200%；
-		encrypt(readLong(shoePointer) + C_MOVE_SPEED, 2000); // 200%；
-		encrypt(readLong(shoePointer) + C_CASTING_SPEED, 2000); // 200%；
-	}
-	else {
-		encrypt(readLong(shoePointer) + C_ATTACK_SPEED, 0); // 200%；
-		encrypt(readLong(shoePointer) + C_MOVE_SPEED, 0); // 200%；
-		encrypt(readLong(shoePointer) + C_CASTING_SPEED, 0); // 200%；
-	}
+	encrypt(readLong(shoePointer) + C_ATTACK_SPEED, attack);
+	encrypt(readLong(shoePointer) + C_MOVE_SPEED, move);
+	encrypt(readLong(shoePointer) + C_CASTING_SPEED, casting);
+
 }
 
 void DNF::summonFigure(int code)

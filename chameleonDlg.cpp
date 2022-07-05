@@ -24,7 +24,8 @@ CchameleonDlg* MainDlg;
 CchameleonDlg::CchameleonDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_CHAMELEON_DIALOG, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	//m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDIGNORE);
 }
 
 void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
@@ -34,6 +35,12 @@ void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT1, Console);
 	DDX_Control(pDX, IDC_BUTTON2, changeNameBtn);
 	DDX_Control(pDX, IDC_EDIT7, _skill_size);
+	DDX_Control(pDX, IDC_EDIT2, _user_name);
+	DDX_Control(pDX, IDC_EDIT4, _attack_speed);
+	DDX_Control(pDX, IDC_EDIT8, _skill_code);
+	DDX_Control(pDX, IDC_EDIT6, _skill_damage);
+	DDX_Control(pDX, IDC_EDIT3, _casting_speed);
+	DDX_Control(pDX, IDC_EDIT5, _move_speed);
 }
 
 BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
@@ -63,6 +70,7 @@ BOOL CchameleonDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 
 	Log(L"请启动游戏然后点击初始化");
+	this->SetWindowText(L"变色龙");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -140,8 +148,16 @@ void CchameleonDlg::OnBnClickedButton1()
 
 void CchameleonDlg::OnBnClickedButton2()
 {
-	Log(L"修改角色名");
-	_DNF->changeUserName();
+	// 获取角色名
+	CString name;
+	CStringA userName;
+	_user_name.GetWindowText(name);
+	if (name.IsEmpty()) {
+		Log(L"角色名为空，不进行修改");
+		return;
+	}
+	userName = name;
+	_DNF->changeUserName(userName);
 }
 
 void CchameleonDlg::Log(wchar_t* msg)
@@ -184,7 +200,12 @@ void CchameleonDlg::OnClose()
 void CchameleonDlg::OnBnClickedButton3()
 {
 	Log(L"修改三速");
-	_DNF->threeSpeed(true);
+	CString attack, casting, move;
+	_attack_speed.GetWindowText(attack);
+	_casting_speed.GetWindowText(casting);
+	_move_speed.GetWindowText(move);
+
+	_DNF->threeSpeed(_ttoi(attack), _ttoi(casting), _ttoi(move));
 }
 
 
@@ -195,10 +216,13 @@ void CchameleonDlg::OnBnClickedButton4()
 	//_DNF->summonFigure(5308);
 	//_DNF->hiddenUser();
 	//_DNF->skillCall(_DNF->readLong(C_USER), 51200, 999999, 500, 500, 0, 0);
-	
+
 	// 获取技能代码
-	CString skillCodeText;
-	_skill_size.GetWindowText(skillCodeText);
-	int skillCode = _ttoi(skillCodeText);
-	_DNF->skillCall(_DNF->readLong(C_USER), skillCode, 1, 300, 300, 0, 0);
+	CString skillCode, skillDamage, skillSize;
+	_skill_code.GetWindowText(skillCode);
+	_skill_damage.GetWindowText(skillDamage);
+	_skill_size.GetWindowText(skillSize);
+
+
+	_DNF->skillCall(_DNF->readLong(C_USER), _ttoi(skillCode), _ttoi(skillDamage), 500, 250, 0, 0);
 }

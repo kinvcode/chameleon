@@ -54,4 +54,10 @@ public:
 	afx_msg void OnBnClickedButton3();
 	afx_msg void OnBnClickedButton4();
 	CEdit _skill_size;
+	CEdit _user_name;
+	CEdit _attack_speed;
+	CEdit _skill_code;
+	CEdit _skill_damage;
+	CEdit _casting_speed;
+	CEdit _move_speed;
 };

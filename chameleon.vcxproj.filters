@@ -83,5 +83,11 @@
     <Image Include="res\chameleon.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="res\logo.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="C:\Users\Administrator\Downloads\logo.png">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>
