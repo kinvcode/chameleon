@@ -12,3 +12,9 @@
 #define C_SUMMON_MONSTER 0x1439B9560// 召唤怪物CALL
 #define C_HIDDEN_CALL 0x144CFA7F0 // 透明CALL
 #define C_SKILL_CALL 0x1438F55F0// 技能CALL
+#define C_GAME_STATUS 0x14912D540 // 游戏状态
+#define C_ROOM_NUMBER 0x14944ED18 // 房间编号
+#define C_TIME_ADDRESS 0x20A050 // 时间基址
+#define C_DOOR_TYPE_OFFSET 0x168 // 门型偏移
+#define C_BONFIRE_JUDGE 0x1DA8 // 篝火判断
+

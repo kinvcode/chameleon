@@ -4,13 +4,11 @@
 #include "constant.h"
 #include "overloading.h"
 
-
 extern CchameleonDlg* MainDlg;
 
 DNF::DNF(DWORD PID)
 {
 	this->PID = PID;
-	//this->MainWindow = dlg;
 }
 
 DNF::~DNF()
@@ -88,6 +86,55 @@ void DNF::handleEvents()
 			AfxGetThread()->PumpMessage();
 		}
 	}
+}
+
+bool DNF::programDelay(int time = 0, int delayUnit = 0)
+{
+	INT_PTR Interval = time, Unit = 0;
+	if (!Interval && !Unit)
+	{
+		Interval = 5000 * 60 * 60;
+		Unit = 5000 * 60 * 60;
+	}
+	else {
+		switch (delayUnit)
+		{
+		case 0:
+			Unit = 1;
+			break;
+		case 1:
+			Unit = 1000;
+			break;
+		case 2:
+			Unit = 1000 * 60;
+			break;
+		case 3:
+			Unit = 1000 * 60 * 60;
+			break;
+		default:
+			break;
+		}
+	}
+
+	HANDLE handle[1];
+	handle[0] = CreateWaitableTimerW(NULL, false, NULL);
+	LARGE_INTEGER lpDueTime;
+	lpDueTime.QuadPart = -10 * Interval * 1000 * Unit;
+	SetWaitableTimer(handle[0], &lpDueTime, 0, NULL, NULL, false);
+	DWORD nCount = sizeof(handle) / sizeof(HANDLE);
+	while (MsgWaitForMultipleObjects(nCount, handle, false, -1, (QS_KEY | QS_MOUSEMOVE | QS_MOUSEBUTTON | QS_POSTMESSAGE | QS_TIMER | QS_PAINT | QS_SENDMESSAGE | QS_HOTKEY)) != WAIT_OBJECT_0)
+	{
+		// 系统处理事件
+		MSG msg;
+		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	CloseHandle(handle[0]);
+	return true;
 }
 
 
@@ -346,10 +393,74 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 	memoryAssambly(asm_code);
 }
 
+bool DNF::gameClearance()
+{
+	__int64 roomData = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	__int64 result = readInt(roomData + C_BONFIRE_JUDGE);
+	if (result == 2 || result == 0)
+	{
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 UINT manualThread(LPVOID pParam)
 {
 	// 手动逻辑处理
-	AfxMessageBox(L"手动线程开启");
+	DNF* dnf = (DNF*)pParam;
+
+	bool first_room = false;
+	bool clearance_judge = false;
+
+	while (true)
+	{
+		if (dnf->readInt(0x140000000) != 0x905A4D) {
+			// 游戏结束
+		}
+
+		// 如果在图内
+		if (dnf->readInt(C_GAME_STATUS) == 3)
+		{
+			// 开启拾取
+			if (false)
+			{
+				//全屏吸物
+			}
+
+			// 如果是第一个房间
+			if (first_room == false && dnf->gameClearance() == false)
+			{
+				first_room = true;
+
+				CString attack_speed, move_speed, casting_speed;
+				MainDlg->_attack_speed.GetWindowText(attack_speed);
+				MainDlg->_move_speed.GetWindowText(move_speed);
+				MainDlg->_casting_speed.GetWindowText(casting_speed);
+
+				//firstRoomFunctions();
+			}
+
+			// 如果已经通关
+			if (clearance_judge == false && dnf->gameClearance() == true)
+			{
+				first_room = false;
+				clearance_judge = true;
+			}
+		}
+
+		// 如果不在图内
+		if (dnf->readInt(C_GAME_STATUS) <= 2)
+		{
+			clearance_judge = false;
+		}
+
+		dnf->programDelay(100);
+		dnf->handleEvents();
+	}
+
+	dnf->hiddenUser();
 
 	return 0;   // thread completed successfully
 }

@@ -84,6 +84,9 @@
     <None Include="res\chameleon.rc2">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="msdk.dll">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\chameleon.ico">

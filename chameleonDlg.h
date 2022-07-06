@@ -63,4 +63,8 @@ public:
 	CEdit _casting_speed;
 	CEdit _move_speed;
 	afx_msg void OnBnClickedButton5();
+	CButton _switch_three_speed;
+	CButton _switch_skill_call;
+	CButton _switch_hidden_user;
+	CButton _switch_score;
 };

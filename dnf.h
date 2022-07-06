@@ -1,14 +1,14 @@
 #pragma once
 #include <vector>
 
-class DNF 
+class DNF
 {
 public:
 	DNF(DWORD PID);
 	~DNF();
 	DWORD PID;
 	HANDLE handle = NULL;
-	
+
 	/**********[ 实 用 函 数 区 域 ]***********/
 
 	std::vector<byte> Ansi2Unicode(CStringA  str);
@@ -21,9 +21,12 @@ public:
 
 	std::vector<byte> intToBytes(__int64 length);
 
-	
+
 	/**********[ 进 程 函 数 区 域 ]***********/
+
 	void handleEvents();
+
+	bool programDelay(int time, int delayUnit);
 
 	/**********[ 读 写 函 数 区 域 ]***********/
 
@@ -58,6 +61,8 @@ public:
 	void hiddenUser();
 
 	void skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int z, int skillSize);
+
+	bool gameClearance();
 
 	void manualThreadControl();
 };

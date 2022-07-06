@@ -218,6 +218,7 @@
     <ResourceCompile Include="chameleon.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="msdk.dll" />
     <None Include="res\chameleon.rc2" />
   </ItemGroup>
   <ItemGroup>

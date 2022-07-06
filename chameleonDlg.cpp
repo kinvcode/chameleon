@@ -43,6 +43,10 @@ void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT6, _skill_damage);
 	DDX_Control(pDX, IDC_EDIT3, _casting_speed);
 	DDX_Control(pDX, IDC_EDIT5, _move_speed);
+	DDX_Control(pDX, IDC_CHECK1, _switch_three_speed);
+	DDX_Control(pDX, IDC_CHECK2, _switch_skill_call);
+	DDX_Control(pDX, IDC_CHECK4, _switch_hidden_user);
+	DDX_Control(pDX, IDC_CHECK3, _switch_score);
 }
 
 BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
@@ -71,7 +75,15 @@ BOOL CchameleonDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	this->SetWindowText(L"变色龙");
+
+	SetWindowText(L"变色龙");
+
+	// 初始化数值
+	_attack_speed.SetWindowText(L"0");
+	_casting_speed.SetWindowText(L"0");
+	_move_speed.SetWindowText(L"0");
+
+	_user_name.SetWindowText(L"旭旭宝宝");
 
 	// 初始化模拟按键
 	msdk_handle = M_Open(1);
