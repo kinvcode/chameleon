@@ -13,6 +13,8 @@ class CchameleonDlg : public CDialogEx
 public:
 	CchameleonDlg(CWnd* pParent = nullptr);	// 标准构造函数
 
+	HANDLE msdk_handle; // 按键句柄
+
 // 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_CHAMELEON_DIALOG };
@@ -60,4 +62,5 @@ public:
 	CEdit _skill_damage;
 	CEdit _casting_speed;
 	CEdit _move_speed;
+	afx_msg void OnBnClickedButton5();
 };

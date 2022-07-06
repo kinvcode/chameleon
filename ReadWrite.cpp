@@ -43,14 +43,14 @@ __int64 ReadWrite::GetProcessModule(DWORD pid, wchar_t Name[])
 	__int64 temp = 0;
 
 	HANDLE hModuleSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetPid());
-	HANDLE modules = 0;
+	BOOL modules = FALSE;
 	if (hModuleSnap != 0)
 	{
 		module.dwSize = sizeof(MODULEENTRY32);
 
-		modules = (HANDLE)Module32First(hModuleSnap, &module);
+		modules = Module32First(hModuleSnap, &module);
 
-		while (modules != 0)
+		while (modules)
 		{
 			if (lstrcmpi(module.szModule, Name) == 0)
 			{
@@ -60,7 +60,7 @@ __int64 ReadWrite::GetProcessModule(DWORD pid, wchar_t Name[])
 				return temp;
 			}
 
-			modules = (HANDLE)Module32Next(hModuleSnap, &module);
+			modules = Module32Next(hModuleSnap, &module);
 		}
 		CloseHandle(hModuleSnap);
 	}
@@ -120,15 +120,16 @@ bool ReadWrite::processExists(wchar_t Name[])
 {
 
 	PROCESSENTRY32 Processinformation = { 0 };
-	HANDLE Processhandle, Processsnapshot;
+	BOOL Processhandle;
+	HANDLE Processsnapshot;
 
 	Processsnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
 	if (Processsnapshot != 0)
 	{
 		Processinformation.dwSize = sizeof(PROCESSENTRY32);
-		Processhandle = (HANDLE)Process32First(Processsnapshot, &Processinformation);
-		while (Processhandle != 0)
+		Processhandle = Process32First(Processsnapshot, &Processinformation);
+		while (Processhandle)
 		{
 			if (lstrcmpi(Name, Processinformation.szExeFile) == 0)
 			{
@@ -136,7 +137,7 @@ bool ReadWrite::processExists(wchar_t Name[])
 
 				return  true;
 			}
-			Processhandle = (HANDLE)Process32Next(Processsnapshot, &Processinformation);
+			Processhandle = Process32Next(Processsnapshot, &Processinformation);
 		}
 		CloseHandle(Processsnapshot);
 	}
@@ -147,15 +148,16 @@ int ReadWrite::TakePid(wchar_t Name[])
 {
 
 	PROCESSENTRY32 Processinformation = { 0 };
-	HANDLE Processhandle, Processsnapshot;
+	BOOL Processhandle;
+	HANDLE Processsnapshot;
 
 	Processsnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
 	if (Processsnapshot != 0)
 	{
 		Processinformation.dwSize = sizeof(PROCESSENTRY32);
-		Processhandle = (HANDLE)Process32First(Processsnapshot, &Processinformation);
-		while (Processhandle != 0)
+		Processhandle = Process32First(Processsnapshot, &Processinformation);
+		while (Processhandle)
 		{
 			if (lstrcmpi(Name, Processinformation.szExeFile) == 0)
 			{
@@ -163,7 +165,7 @@ int ReadWrite::TakePid(wchar_t Name[])
 
 				return Processinformation.th32ProcessID;
 			}
-			Processhandle = (HANDLE)Process32Next(Processsnapshot, &Processinformation);
+			Processhandle = Process32Next(Processsnapshot, &Processinformation);
 		}
 		CloseHandle(Processsnapshot);
 

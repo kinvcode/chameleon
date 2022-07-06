@@ -9,6 +9,8 @@
 #include "dnf.h"
 #include "loadDriver.h"
 #include "constant.h"
+#include "msdk.h"
+#include "UsbHidKeyCode.h"
 
 
 #ifdef _DEBUG
@@ -52,6 +54,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_WM_CLOSE()
 	ON_BN_CLICKED(IDC_BUTTON3, &CchameleonDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON4, &CchameleonDlg::OnBnClickedButton4)
+	ON_BN_CLICKED(IDC_BUTTON5, &CchameleonDlg::OnBnClickedButton5)
 END_MESSAGE_MAP()
 
 
@@ -68,9 +71,15 @@ BOOL CchameleonDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	this->SetWindowText(L"变色龙");
+
+	// 初始化模拟按键
+	msdk_handle = M_Open(1);
+	if (msdk_handle == INVALID_HANDLE_VALUE) {
+		Log(L"模拟按键开启失败");
+	}
 
 	Log(L"请启动游戏然后点击初始化");
-	this->SetWindowText(L"变色龙");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -173,9 +182,15 @@ void CchameleonDlg::OnClose()
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	Log(L"清理残留数据中...");
 
+	// 关闭按键
+	if (msdk_handle != INVALID_HANDLE_VALUE) {
+		M_Close(msdk_handle);
+		msdk_handle = INVALID_HANDLE_VALUE;
+	}
+
+	// 停止并删除读写驱动
 	BOOL uninstallResult;
 	wchar_t szFileName[MAX_PATH] = L"C:\\Randw.sys";
-	// 停止并删除服务
 	uninstallResult = SystemServiceOperate(szFileName, 2);
 	if (FALSE == uninstallResult)
 	{
@@ -192,7 +207,7 @@ void CchameleonDlg::OnClose()
 	else {
 		Log(L"删除驱动成功");
 	}
-
+	Sleep(1500);
 	CDialogEx::OnClose();
 }
 
@@ -225,4 +240,23 @@ void CchameleonDlg::OnBnClickedButton4()
 
 
 	_DNF->skillCall(_DNF->readLong(C_USER), _ttoi(skillCode), _ttoi(skillDamage), 500, 250, 0, 0);
+}
+
+
+void CchameleonDlg::OnBnClickedButton5()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	// 测试模拟键鼠
+	if (msdk_handle == INVALID_HANDLE_VALUE) {
+		Log(L"模拟按键未启动！");
+		return;
+	}
+	unsigned int RetSw;
+	for (int i = 0; i < 10;i++) 
+	{
+		unsigned int RetSw;
+		RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
+	}
+
 }

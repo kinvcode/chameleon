@@ -46,7 +46,7 @@ BOOL CchameleonApp::InitInstance()
 	// 启动方式：提权启动、加载驱动
 
 
-	//// 判断应用是否以system身份启动
+	// 判断应用是否以system身份启动
 	//CString sysName = L"SYSTEM";
 	//DWORD dwSize = MAX_PATH;
 	//TCHAR* pszName = new TCHAR[dwSize];
