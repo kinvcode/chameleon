@@ -248,15 +248,18 @@ void CchameleonDlg::OnBnClickedButton5()
 	// TODO: 在此添加控件通知处理程序代码
 
 	// 测试模拟键鼠
-	if (msdk_handle == INVALID_HANDLE_VALUE) {
-		Log(L"模拟按键未启动！");
-		return;
-	}
-	unsigned int RetSw;
-	for (int i = 0; i < 10;i++) 
-	{
-		unsigned int RetSw;
-		RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
-	}
+	//if (msdk_handle == INVALID_HANDLE_VALUE) {
+	//	Log(L"模拟按键未启动！");
+	//	return;
+	//}
+	//unsigned int RetSw;
+	//for (int i = 0; i < 10;i++) 
+	//{
+	//	unsigned int RetSw;
+	//	RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
+	//}
+	//& DNF::manualThread;
+	// 测试手动线程
+	_DNF->manualThreadControl();
 
 }

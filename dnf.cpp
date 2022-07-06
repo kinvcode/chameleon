@@ -77,6 +77,20 @@ std::vector<byte> DNF::intToBytes(__int64 length) {
 	return c;
 }
 
+void DNF::handleEvents()
+{
+	CWinThread* pWinThread = AfxGetThread();
+	if (pWinThread != NULL)
+	{
+		MSG msg;
+		while (::PeekMessage(&msg, NULL, NULL, NULL, PM_NOREMOVE) && msg.message != WM_QUIT)
+		{
+			AfxGetThread()->PumpMessage();
+		}
+	}
+}
+
+
 int DNF::readInt(__int64 address)
 {
 	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
@@ -138,6 +152,14 @@ bool DNF::writeByteArray(__int64 address, std::vector<byte> Data)
 }
 
 bool DNF::writeInt(__int64 address, __int64 value)
+{
+	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
+	bool res = WriteProcessMemory(handle, (void*)address, &value, 4, NULL);
+	CloseHandle(handle);
+	return res;
+}
+
+bool DNF::writeFloat(__int64 address, float value)
 {
 	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
 	bool res = WriteProcessMemory(handle, (void*)address, &value, 4, NULL);
@@ -209,6 +231,7 @@ void DNF::memoryAssambly(std::vector<byte>asm_code)
 	while (readLong(logicAddress) == 1)
 	{
 		Sleep(5);
+		handleEvents();
 	}
 
 	writeByteArray(HOOKasm, HOOKraw);
@@ -303,10 +326,7 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 	__int64 emptyAddress = C_EMPTY_ADDRESS + 1200;
 	std::vector<byte>asm_code;
 
-	if (skillSize != 0)
-	{
-		//skillSize = 整数到浮点(skillSize);
-	}
+	float size = (float)skillSize;
 
 	writeLong(emptyAddress, pointer);
 	writeInt(emptyAddress + 16, code);
@@ -314,7 +334,7 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 	writeInt(emptyAddress + 32, x);
 	writeInt(emptyAddress + 36, y);
 	writeInt(emptyAddress + 40, z);
-	writeInt(emptyAddress + 140, skillSize);
+	writeFloat(emptyAddress + 140, size);
 	writeInt(emptyAddress + 144, 65535);
 	writeInt(emptyAddress + 148, 65535);
 
@@ -325,3 +345,18 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 
 	memoryAssambly(asm_code);
 }
+
+UINT manualThread(LPVOID pParam)
+{
+	// 手动逻辑处理
+	AfxMessageBox(L"手动线程开启");
+
+	return 0;   // thread completed successfully
+}
+
+void DNF::manualThreadControl()
+{
+	// 开启线程逻辑
+	AfxBeginThread(manualThread, this);
+}
+

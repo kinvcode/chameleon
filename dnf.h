@@ -21,6 +21,10 @@ public:
 
 	std::vector<byte> intToBytes(__int64 length);
 
+	
+	/**********[ 进 程 函 数 区 域 ]***********/
+	void handleEvents();
+
 	/**********[ 读 写 函 数 区 域 ]***********/
 
 	int readInt(__int64 address);
@@ -28,6 +32,8 @@ public:
 	__int64 readLong(__int64 address);
 
 	bool writeInt(__int64 address, __int64 value);
+
+	bool writeFloat(__int64 address, float value);
 
 	bool writeLong(__int64 address, __int64 value);
 
@@ -52,4 +58,6 @@ public:
 	void hiddenUser();
 
 	void skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int z, int skillSize);
+
+	void manualThreadControl();
 };
