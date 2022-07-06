@@ -434,12 +434,20 @@ UINT manualThread(LPVOID pParam)
 			{
 				first_room = true;
 
-				CString attack_speed, move_speed, casting_speed;
-				MainDlg->_attack_speed.GetWindowText(attack_speed);
-				MainDlg->_move_speed.GetWindowText(move_speed);
-				MainDlg->_casting_speed.GetWindowText(casting_speed);
-
+				// 开启图内功能
 				//firstRoomFunctions();
+				if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
+				{
+					CString attack_speed, move_speed, casting_speed;
+					MainDlg->_attack_speed.GetWindowText(attack_speed);
+					MainDlg->_move_speed.GetWindowText(move_speed);
+					MainDlg->_casting_speed.GetWindowText(casting_speed);
+					dnf->threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+				}
+				if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
+				{
+					dnf->superScore();
+				}
 			}
 
 			// 如果已经通关
@@ -447,6 +455,8 @@ UINT manualThread(LPVOID pParam)
 			{
 				first_room = false;
 				clearance_judge = true;
+
+				// 关闭图内功能
 			}
 		}
 
@@ -469,5 +479,10 @@ void DNF::manualThreadControl()
 {
 	// 开启线程逻辑
 	AfxBeginThread(manualThread, this);
+}
+
+void DNF::superScore()
+{
+	writeLong(readLong(C_SCORE_ADDRESS) + C_CE_SCORE, 999999);
 }
 

@@ -17,4 +17,6 @@
 #define C_TIME_ADDRESS 0x20A050 // 时间基址
 #define C_DOOR_TYPE_OFFSET 0x168 // 门型偏移
 #define C_BONFIRE_JUDGE 0x1DA8 // 篝火判断
+#define C_SCORE_ADDRESS 0x14944D8B8 // 评分基址
+#define C_CE_SCORE 0xC98 // CE评分
 

@@ -65,4 +65,6 @@ public:
 	bool gameClearance();
 
 	void manualThreadControl();
+
+	void superScore();
 };

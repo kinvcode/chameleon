@@ -83,6 +83,9 @@ BOOL CchameleonDlg::OnInitDialog()
 	_casting_speed.SetWindowText(L"0");
 	_move_speed.SetWindowText(L"0");
 
+	_switch_score.SetCheck(BST_CHECKED);
+	_switch_three_speed.SetCheck(BST_CHECKED);
+
 	_user_name.SetWindowText(L"旭旭宝宝");
 
 	// 初始化模拟按键
@@ -163,6 +166,9 @@ void CchameleonDlg::OnBnClickedButton1()
 	}
 	else {
 		Log(L"初始化成功!");
+
+		// 启动手动线程
+		_DNF->manualThreadControl();
 	}
 }
 
@@ -270,8 +276,5 @@ void CchameleonDlg::OnBnClickedButton5()
 	//	unsigned int RetSw;
 	//	RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
 	//}
-	//& DNF::manualThread;
-	// 测试手动线程
-	_DNF->manualThreadControl();
 
 }
