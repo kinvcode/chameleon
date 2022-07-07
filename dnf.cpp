@@ -230,6 +230,13 @@ void DNF::encrypt(__int64 address, int value)
 	writeLong(address, data);
 }
 
+__int64 DNF::decrypt(__int64 address)
+{
+	__int64 data = readLong(address) ^ 0x1F2A025C;
+	data -= 4;
+	return data;
+}
+
 void DNF::memoryAssambly(std::vector<byte>asm_code)
 {
 	// HOOK数据和原始数据
@@ -393,11 +400,119 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 	memoryAssambly(asm_code);
 }
 
-bool DNF::gameClearance()
+COORDINATE DNF::judgeBossRoom()
+{
+	COORDINATE coor;
+	__int64 roomData = readLong(readLong(readLong(readLong(C_ROOM_NUMBER)) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	coor.x = (int)decrypt(roomData + C_BOSS_ROOM_X);
+	coor.y = (int)decrypt(roomData + C_BOSS_ROOM_Y);
+	return coor;
+}
+
+COORDINATE DNF::judgeCurrentRoom()
+{
+	COORDINATE coor;
+	__int64 roomData = readLong(readLong(readLong(readLong(C_ROOM_NUMBER)) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	coor.x = (int)decrypt(roomData + C_CURRENT_ROOM_X);
+	coor.y = (int)decrypt(roomData + C_CURRENT_ROOM_Y);
+	return coor;
+}
+
+bool DNF::judgeHaveMonster()
+{
+	if (judgeGameStatus() != 3)
+	{
+		return false;
+	}
+
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+
+	int monster_quantity = (int)(end_address - head_address) / 16;
+	for (__int64 i = 1; i <= monster_quantity; i++)
+	{
+		__int64 monster_address = readLong(readLong(head_address + i * 16) + 16) - 32;
+		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
+		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
+		int monster_code = readInt(monster_address + C_CODE_OFFSET);
+		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
+		
+		if (monster_type == 0x111 || monster_type == 211)
+		{
+			if (monster_camp !=0 && monster_blood != 0) 
+			{
+				return true;
+			}
+		}
+
+		handleEvents();
+	}
+	return false;
+}
+
+bool DNF::judgeHaveItem()
+{
+	if (judgeGameStatus() != 3)
+	{
+		return false;
+	}
+
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+
+	int monster_quantity = (int)(end_address - head_address) / 16;
+	for (__int64 i = 1; i <= monster_quantity; i++)
+	{
+		__int64 monster_address = readLong(readLong(head_address + i * 16) + 16) - 32;
+		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
+		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
+		int monster_code = readInt(monster_address + C_CODE_OFFSET);
+		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
+
+		if (monster_type == 0x121)
+		{
+			return true;
+		}
+
+		handleEvents();
+	}
+	return false;
+}
+
+int DNF::judgeGameStatus()
+{
+	return readInt(C_GAME_STATUS);
+}
+
+bool DNF::judgeClearance()
 {
 	__int64 roomData = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
 	__int64 result = readInt(roomData + C_BONFIRE_JUDGE);
 	if (result == 2 || result == 0)
+	{
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool DNF::judgeDoorOpen()
+{
+	if (decrypt(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_DOOR_OFFSET) == 0) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool DNF::judgeIsBossRoom()
+{
+	COORDINATE cur, boss;
+	cur = judgeCurrentRoom();
+	boss = judgeBossRoom();
+	if (cur.x == boss.x && cur.y == boss.y) 
 	{
 		return true;
 	}
@@ -430,7 +545,7 @@ UINT manualThread(LPVOID pParam)
 			}
 
 			// 如果是第一个房间
-			if (first_room == false && dnf->gameClearance() == false)
+			if (first_room == false && dnf->judgeClearance() == false)
 			{
 				first_room = true;
 
@@ -451,7 +566,7 @@ UINT manualThread(LPVOID pParam)
 			}
 
 			// 如果已经通关
-			if (clearance_judge == false && dnf->gameClearance() == true)
+			if (clearance_judge == false && dnf->judgeClearance() == true)
 			{
 				first_room = false;
 				clearance_judge = true;
@@ -463,6 +578,7 @@ UINT manualThread(LPVOID pParam)
 		// 如果不在图内
 		if (dnf->readInt(C_GAME_STATUS) <= 2)
 		{
+			first_room = false;
 			clearance_judge = false;
 		}
 

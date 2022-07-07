@@ -19,4 +19,17 @@
 #define C_BONFIRE_JUDGE 0x1DA8 // 篝火判断
 #define C_SCORE_ADDRESS 0x14944D8B8 // 评分基址
 #define C_CE_SCORE 0xC98 // CE评分
-
+#define C_DOOR_OFFSET 0x1E4 // 开门偏移（是否开门）
+#define C_MAP_OFFSET 0x180 // 地图偏移_1
+#define C_BOSS_ROOM_X 0x1CF4 // BOSS房间_X
+#define C_BOSS_ROOM_Y 0x1CFC // BOSS房间_Y
+#define C_CURRENT_ROOM_X 0x1BD8 // 当前房间_X
+#define C_CURRENT_ROOM_Y 0x1BDC // 当前房间_Y
+#define C_MAP_HEAD 0x148 // 地图开始
+#define C_MAP_END 0x150 // 地图结束
+#define C_HEAD_ADDRESS 0x148 // 首地址
+#define C_END_ADDRESS 0x150 // 尾地址
+#define C_TYPE_OFFSET 0x154 // 类型偏移
+#define C_CAMP_OFFSET 0xE60 // 阵营偏移
+#define C_CODE_OFFSET 0x830 // 代码偏移
+#define C_MONSTER_BLOOD 0x6038 // 怪物血量

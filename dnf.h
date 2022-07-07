@@ -1,6 +1,12 @@
 #pragma once
 #include <vector>
 
+struct COORDINATE{
+	int x;
+	int y;
+	int z;
+};
+
 class DNF
 {
 public:
@@ -48,6 +54,8 @@ public:
 
 	void encrypt(__int64 address, int value);
 
+	__int64 decrypt(__int64 address);
+
 	void memoryAssambly(std::vector<byte>asm_code);
 
 	void changeUserName(CStringA name);
@@ -62,7 +70,21 @@ public:
 
 	void skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int z, int skillSize);
 
-	bool gameClearance();
+	COORDINATE judgeBossRoom();
+
+	COORDINATE judgeCurrentRoom();
+
+	bool judgeHaveMonster();
+
+	bool judgeHaveItem();
+
+	int judgeGameStatus();
+
+	bool judgeDoorOpen();
+
+	bool judgeClearance();
+
+	bool judgeIsBossRoom();
 
 	void manualThreadControl();
 
