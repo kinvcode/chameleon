@@ -164,6 +164,19 @@ __int64 DNF::readLong(__int64 address)
 	return 0;
 }
 
+float DNF::readFloat(__int64 address)
+{
+	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
+	float value;
+	bool res = ReadProcessMemory(handle, (void*)address, &value, 4, NULL);
+	if (res)
+	{
+		return value;
+	}
+	CloseHandle(handle);
+	return 0;
+}
+
 std::vector<byte> DNF::readByteArray(__int64 address, int length)
 {
 	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
@@ -436,10 +449,10 @@ bool DNF::judgeHaveMonster()
 		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
 		int monster_code = readInt(monster_address + C_CODE_OFFSET);
 		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
-		
-		if (monster_type == 0x111 || monster_type == 211)
+
+		if (monster_type == 0x111 || monster_type == 0x211)
 		{
-			if (monster_camp !=0 && monster_blood != 0) 
+			if (monster_camp != 0 && monster_blood != 0)
 			{
 				return true;
 			}
@@ -512,7 +525,7 @@ bool DNF::judgeIsBossRoom()
 	COORDINATE cur, boss;
 	cur = judgeCurrentRoom();
 	boss = judgeBossRoom();
-	if (cur.x == boss.x && cur.y == boss.y) 
+	if (cur.x == boss.x && cur.y == boss.y)
 	{
 		return true;
 	}
@@ -539,30 +552,17 @@ UINT manualThread(LPVOID pParam)
 		if (dnf->readInt(C_GAME_STATUS) == 3)
 		{
 			// 开启拾取
-			if (false)
+			if (MainDlg->_switch_gather_items.GetCheck() == BST_CHECKED)
 			{
 				//全屏吸物
+				dnf->gatherItems();
 			}
 
 			// 如果是第一个房间
 			if (first_room == false && dnf->judgeClearance() == false)
 			{
 				first_room = true;
-
-				// 开启图内功能
-				//firstRoomFunctions();
-				if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
-				{
-					CString attack_speed, move_speed, casting_speed;
-					MainDlg->_attack_speed.GetWindowText(attack_speed);
-					MainDlg->_move_speed.GetWindowText(move_speed);
-					MainDlg->_casting_speed.GetWindowText(casting_speed);
-					dnf->threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
-				}
-				if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
-				{
-					dnf->superScore();
-				}
+				dnf->firstRoomFunctions();
 			}
 
 			// 如果已经通关
@@ -591,6 +591,100 @@ UINT manualThread(LPVOID pParam)
 	return 0;   // thread completed successfully
 }
 
+UINT autolThread(LPVOID pParam)
+{
+	// 自动逻辑处理
+	DNF* dnf = (DNF*)pParam;
+
+	bool change_user = false;
+
+	bool first_room = false;
+	bool clearance = false;
+	bool handle_next_room = false;
+	int Gabriel = 0;
+	int handle_room_times = 0;
+
+
+	if (true)
+	{
+		if (dnf->judgeGameStatus() == 3)
+		{
+			// 如果没开门
+			if (dnf->judgeDoorOpen() == false)
+			{
+				handle_next_room = false;
+				clearance = false;
+				handle_room_times = 0;
+				//每图循环(); 未完成 // 打怪逻辑处理
+			}
+			else {
+				// 如果当前是BOSS
+				if (dnf->judgeIsBossRoom())
+				{
+					// 通关->通关处理
+					if (dnf->judgeClearance())
+					{
+						first_room = false;
+						if (clearance) 
+						{
+							dnf->gatherItems();
+							Gabriel += 1;
+							if (Gabriel == 15) 
+							{
+								//再次挑战();
+							}
+							if (Gabriel == 30) 
+							{
+								//返回城镇();
+							}
+						}
+						else {
+							Gabriel = 0;
+							clearance = true;
+							// 组包翻牌();
+							handle_room_times += 1;
+							// 分解装备();
+							// 更换角色();
+						}
+					}
+				}
+				else {
+					dnf->gatherItems();
+
+					// 没有物品->进行过图处理
+					if (!dnf->judgeHaveItem())
+					{
+						// 过图处理
+						if (!first_room) 
+						{
+							first_room = true;
+							dnf->firstRoomFunctions();
+						}
+						handle_room_times += 1;
+						if (handle_room_times >= 3) 
+						{
+							// 自动寻路(); 未完成
+							handle_room_times = 0;
+						}
+					}
+				}
+			}
+		}
+
+		if (dnf->judgeGameStatus() == 1 && change_user == false)
+		{
+			handle_room_times += 1;
+			if (handle_room_times > 12)
+			{
+				//二次进图(); // 继续挑战
+				handle_room_times = 0;
+			}
+		}
+
+		dnf->programDelay(300);
+	}
+}
+
 void DNF::manualThreadControl()
 {
 	// 开启线程逻辑
@@ -602,3 +696,96 @@ void DNF::superScore()
 	writeLong(readLong(C_SCORE_ADDRESS) + C_CE_SCORE, 999999);
 }
 
+void DNF::gatherItems()
+{
+	if (judgeGameStatus() != 3)
+	{
+		return;
+	}
+
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+	int item_quantity = 0;
+	COORDINATE monster_coordinate;
+	COORDINATE user_coordinate;
+
+	int monster_quantity = (int)(end_address - head_address) / 16;
+	for (__int64 i = 1; i <= monster_quantity; i++)
+	{
+		__int64 monster_address = readLong(readLong(head_address + i * 16) + 16) - 32;
+		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
+		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
+		int monster_code = readInt(monster_address + C_CODE_OFFSET);
+		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
+
+		if (monster_type == 0x121)
+		{
+			item_quantity += 1;
+			monster_coordinate = readCoordinate(monster_address);
+			user_coordinate = readCoordinate(readLong(C_USER));
+			if (monster_coordinate.z == 0)
+			{
+				if (abs(monster_coordinate.x - user_coordinate.x) < 20 && abs(monster_coordinate.y - user_coordinate.y) < 20)
+				{
+					continue;
+				}
+				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 32, (float)user_coordinate.x);
+				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 36, (float)user_coordinate.y);
+			}
+			handleEvents();
+		}
+	}
+
+	if (item_quantity > 0)
+	{
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
+		programDelay(150);
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 116,21 }));
+	}
+}
+
+COORDINATE DNF::readCoordinate(__int64 address)
+{
+	__int64 pointer;
+	COORDINATE coor;
+
+	int type = readInt(address + C_TYPE_OFFSET);
+
+	if (type == 0x111)
+	{
+		pointer = readLong(address + C_READ_COORDINATE);
+		coor.x = (int)readFloat(pointer + 0);
+		coor.y = (int)readFloat(pointer + 4);
+		coor.z = (int)readFloat(pointer + 8);
+		return coor;
+	}
+	else
+	{
+		pointer = readLong(address + C_OBJECT_COORDINATE);
+		coor.x = (int)readFloat(pointer + 32);
+		coor.y = (int)readFloat(pointer + 36);
+		coor.z = (int)readFloat(pointer + 40);
+		return coor;
+	}
+}
+
+void DNF::firstRoomFunctions()
+{
+	if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
+	{
+		CString attack_speed, move_speed, casting_speed;
+		MainDlg->_attack_speed.GetWindowText(attack_speed);
+		MainDlg->_move_speed.GetWindowText(move_speed);
+		MainDlg->_casting_speed.GetWindowText(casting_speed);
+		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+	}
+	if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
+	{
+		superScore();
+	}
+}
+
+void DNF::clearanceEvent()
+{
+
+}

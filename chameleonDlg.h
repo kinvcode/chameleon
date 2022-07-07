@@ -67,4 +67,5 @@ public:
 	CButton _switch_skill_call;
 	CButton _switch_hidden_user;
 	CButton _switch_score;
+	CButton _switch_gather_items;
 };

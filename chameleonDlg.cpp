@@ -47,6 +47,7 @@ void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK2, _switch_skill_call);
 	DDX_Control(pDX, IDC_CHECK4, _switch_hidden_user);
 	DDX_Control(pDX, IDC_CHECK3, _switch_score);
+	DDX_Control(pDX, IDC_CHECK5, _switch_gather_items);
 }
 
 BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
@@ -79,12 +80,14 @@ BOOL CchameleonDlg::OnInitDialog()
 	SetWindowText(L"变色龙");
 
 	// 初始化数值
-	_attack_speed.SetWindowText(L"0");
-	_casting_speed.SetWindowText(L"0");
-	_move_speed.SetWindowText(L"0");
+	_attack_speed.SetWindowText(L"1000");
+	_casting_speed.SetWindowText(L"2000");
+	_move_speed.SetWindowText(L"800");
 
 	_switch_score.SetCheck(BST_CHECKED);
 	_switch_three_speed.SetCheck(BST_CHECKED);
+	_switch_gather_items.SetCheck(BST_CHECKED);
+	
 
 	_user_name.SetWindowText(L"旭旭宝宝");
 

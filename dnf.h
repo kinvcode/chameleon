@@ -40,6 +40,8 @@ public:
 
 	__int64 readLong(__int64 address);
 
+	float readFloat(__int64 address);
+
 	bool writeInt(__int64 address, __int64 value);
 
 	bool writeFloat(__int64 address, float value);
@@ -89,4 +91,12 @@ public:
 	void manualThreadControl();
 
 	void superScore();
+
+	void gatherItems();
+
+	COORDINATE readCoordinate(__int64 address);
+
+	void firstRoomFunctions();
+
+	void clearanceEvent();
 };

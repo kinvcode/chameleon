@@ -33,3 +33,6 @@
 #define C_CAMP_OFFSET 0xE60 // 阵营偏移
 #define C_CODE_OFFSET 0x830 // 代码偏移
 #define C_MONSTER_BLOOD 0x6038 // 怪物血量
+#define C_READ_COORDINATE 0x330 // 读取坐标
+#define C_OBJECT_COORDINATE 0x168 // 对象坐标
+#define C_AUTO_PICKUP 0x143CB9F73 // 自动捡物
