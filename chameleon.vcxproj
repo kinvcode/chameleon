@@ -219,6 +219,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="msdk.dll" />
+    <None Include="Randw.sys" />
     <None Include="res\chameleon.rc2" />
   </ItemGroup>
   <ItemGroup>

@@ -47,6 +47,7 @@ public:
 
 	// 游戏
 public:
+
 	//PID
 	DNF* _DNF;
 	CButton changeNameBtn;
@@ -72,4 +73,5 @@ public:
 	CButton _switch_cool_down;
 	afx_msg void OnEnChangeEdit9();
 	afx_msg void OnBnClickedButton6();
+	afx_msg void OnBnClickedButton7();
 };

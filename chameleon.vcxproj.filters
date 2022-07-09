@@ -87,6 +87,9 @@
     <None Include="msdk.dll">
       <Filter>源文件</Filter>
     </None>
+    <None Include="Randw.sys">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\chameleon.ico">

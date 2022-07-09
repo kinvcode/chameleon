@@ -63,6 +63,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON5, &CchameleonDlg::OnBnClickedButton5)
 	ON_EN_CHANGE(IDC_EDIT9, &CchameleonDlg::OnEnChangeEdit9)
 	ON_BN_CLICKED(IDC_BUTTON6, &CchameleonDlg::OnBnClickedButton6)
+	ON_BN_CLICKED(IDC_BUTTON7, &CchameleonDlg::OnBnClickedButton7)
 END_MESSAGE_MAP()
 
 
@@ -217,9 +218,12 @@ void CchameleonDlg::OnClose()
 	}
 
 	// 停止并删除读写驱动
+	wchar_t sys_path[MAX_PATH];
+	GetCurrentDirectory(sizeof(sys_path), sys_path);
+	wcscat_s(sys_path, L"\\Randw.sys");
+
 	BOOL uninstallResult;
-	wchar_t szFileName[MAX_PATH] = L"C:\\Randw.sys";
-	uninstallResult = SystemServiceOperate(szFileName, 2);
+	uninstallResult = SystemServiceOperate(sys_path, 2);
 	if (FALSE == uninstallResult)
 	{
 		Log(L"停止驱动失败");
@@ -227,7 +231,7 @@ void CchameleonDlg::OnClose()
 	else {
 		Log(L"停止驱动成功");
 	}
-	uninstallResult = SystemServiceOperate(szFileName, 3);
+	uninstallResult = SystemServiceOperate(sys_path, 3);
 	if (FALSE == uninstallResult)
 	{
 		Log(L"删除驱动失败");
@@ -249,6 +253,7 @@ void CchameleonDlg::OnBnClickedButton3()
 	_move_speed.GetWindowText(move);
 
 	_DNF->threeSpeed(_ttoi(attack), _ttoi(casting), _ttoi(move));
+	MainDlg->Log(L"三速已开启");
 }
 
 
@@ -315,4 +320,16 @@ void CchameleonDlg::OnBnClickedButton6()
 
 	_DNF->encrypt(_DNF->readLong(_DNF->C_USER) + _DNF->C_FLOAT_COOL_DOWN2, _ttoi(number));
 	MainDlg->Log(L"技能冷却已开启");
+}
+
+
+void CchameleonDlg::OnBnClickedButton7()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	wchar_t wcs[MAX_PATH];
+	GetCurrentDirectory(sizeof(wcs), wcs);
+	wcscat(wcs, L"\\Randw.sys");
+
+	MainDlg->Log(wcs);
 }

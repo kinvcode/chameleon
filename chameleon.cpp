@@ -67,16 +67,18 @@ BOOL CchameleonApp::InitInstance()
 	//}
 
 	// 加载驱动
-	BOOL loadResult = FALSE;
-	wchar_t szFileName[MAX_PATH] = L"C:\\Randw.sys";
+	wchar_t sys_path[MAX_PATH];
+	GetCurrentDirectory(sizeof(sys_path), sys_path);
+	wcscat_s(sys_path, L"\\Randw.sys");
 
+	BOOL loadResult = FALSE;
 	// 创建并启动服务
-	loadResult = SystemServiceOperate(szFileName, 0);
+	loadResult = SystemServiceOperate(sys_path, 0);
 	if (FALSE == loadResult)
 	{
 		AfxMessageBox(L"创建驱动失败");
 	}
-	loadResult = SystemServiceOperate(szFileName, 1);
+	loadResult = SystemServiceOperate(sys_path, 1);
 	if (FALSE == loadResult)
 	{
 		AfxMessageBox(L"启动驱动失败");
