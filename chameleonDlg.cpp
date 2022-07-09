@@ -48,6 +48,8 @@ void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK4, _switch_hidden_user);
 	DDX_Control(pDX, IDC_CHECK3, _switch_score);
 	DDX_Control(pDX, IDC_CHECK5, _switch_gather_items);
+	DDX_Control(pDX, IDC_EDIT9, _cool_down);
+	DDX_Control(pDX, IDC_CHECK6, _switch_cool_down);
 }
 
 BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
@@ -60,6 +62,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON3, &CchameleonDlg::OnBnClickedButton3)
 	ON_BN_CLICKED(IDC_BUTTON4, &CchameleonDlg::OnBnClickedButton4)
 	ON_BN_CLICKED(IDC_BUTTON5, &CchameleonDlg::OnBnClickedButton5)
+	ON_EN_CHANGE(IDC_EDIT9, &CchameleonDlg::OnEnChangeEdit9)
 END_MESSAGE_MAP()
 
 
@@ -84,9 +87,12 @@ BOOL CchameleonDlg::OnInitDialog()
 	_casting_speed.SetWindowText(L"2000");
 	_move_speed.SetWindowText(L"800");
 
+	_cool_down.SetWindowText(L"50");
+
 	_switch_score.SetCheck(BST_CHECKED);
 	_switch_three_speed.SetCheck(BST_CHECKED);
 	_switch_gather_items.SetCheck(BST_CHECKED);
+	_switch_cool_down.SetCheck(BST_CHECKED);
 	
 
 	_user_name.SetWindowText(L"旭旭宝宝");
@@ -279,5 +285,22 @@ void CchameleonDlg::OnBnClickedButton5()
 	//	unsigned int RetSw;
 	//	RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
 	//}
+
+	_DNF->skillCoolDown(80);
+}
+
+
+void CchameleonDlg::OnEnChangeEdit9()
+{
+	CString number;
+	_cool_down.GetWindowText(number);
+	
+	int num = _ttoi(number);
+
+	if (num < 0 || num > 80)
+	{
+		_cool_down.SetWindowText(L"50");
+		Log(L"技能缩减范围：1~80");
+	}
 
 }

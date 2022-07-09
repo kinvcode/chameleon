@@ -36,3 +36,4 @@
 #define C_READ_COORDINATE 0x330 // 读取坐标
 #define C_OBJECT_COORDINATE 0x168 // 对象坐标
 #define C_AUTO_PICKUP 0x143CB9F73 // 自动捡物
+#define C_FLOAT_COOL_DOWN2 0x2288 // 浮点冷却2

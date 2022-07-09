@@ -779,13 +779,28 @@ void DNF::firstRoomFunctions()
 		MainDlg->_casting_speed.GetWindowText(casting_speed);
 		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
 	}
+
 	if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
 	{
 		superScore();
+	}
+
+	if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED) 
+	{
+		CString num;
+		MainDlg->_cool_down.GetWindowText(num);
+		float number = (float)_ttof(num);
+		skillCoolDown(number);
 	}
 }
 
 void DNF::clearanceEvent()
 {
 
+}
+
+void DNF::skillCoolDown(float num) 
+{
+	encrypt(readLong(C_USER)+ C_FLOAT_COOL_DOWN2, num);
+	MainDlg->Log(L"技能冷却已开启");
 }

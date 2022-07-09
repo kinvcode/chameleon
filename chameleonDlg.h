@@ -68,4 +68,7 @@ public:
 	CButton _switch_hidden_user;
 	CButton _switch_score;
 	CButton _switch_gather_items;
+	CEdit _cool_down;
+	CButton _switch_cool_down;
+	afx_msg void OnEnChangeEdit9();
 };
