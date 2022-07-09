@@ -8,7 +8,6 @@
 #include "ReadWrite.h"
 #include "dnf.h"
 #include "loadDriver.h"
-#include "constant.h"
 #include "msdk.h"
 #include "UsbHidKeyCode.h"
 
@@ -63,6 +62,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON4, &CchameleonDlg::OnBnClickedButton4)
 	ON_BN_CLICKED(IDC_BUTTON5, &CchameleonDlg::OnBnClickedButton5)
 	ON_EN_CHANGE(IDC_EDIT9, &CchameleonDlg::OnEnChangeEdit9)
+	ON_BN_CLICKED(IDC_BUTTON6, &CchameleonDlg::OnBnClickedButton6)
 END_MESSAGE_MAP()
 
 
@@ -176,6 +176,7 @@ void CchameleonDlg::OnBnClickedButton1()
 	else {
 		Log(L"初始化成功!");
 
+		// 启动读取人物基址线程
 		// 启动手动线程
 		_DNF->manualThreadControl();
 	}
@@ -266,7 +267,7 @@ void CchameleonDlg::OnBnClickedButton4()
 	_skill_size.GetWindowText(skillSize);
 
 
-	_DNF->skillCall(_DNF->readLong(C_USER), _ttoi(skillCode), _ttoi(skillDamage), 500, 250, 0, 0);
+	_DNF->skillCall(_DNF->readLong(_DNF->C_USER), _ttoi(skillCode), _ttoi(skillDamage), 500, 250, 0, 0);
 }
 
 
@@ -285,8 +286,9 @@ void CchameleonDlg::OnBnClickedButton5()
 	//	unsigned int RetSw;
 	//	RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
 	//}
-
-	_DNF->skillCoolDown(80);
+	
+	// 召唤仓库
+	_DNF->skillCall(_DNF->readLong(_DNF->C_USER),51200,999999,100,100,100,1);
 }
 
 
@@ -303,4 +305,14 @@ void CchameleonDlg::OnEnChangeEdit9()
 		Log(L"技能缩减范围：1~80");
 	}
 
+}
+
+
+void CchameleonDlg::OnBnClickedButton6()
+{
+	CString number;
+	_cool_down.GetWindowText(number);
+
+	_DNF->encrypt(_DNF->readLong(_DNF->C_USER) + _DNF->C_FLOAT_COOL_DOWN2, _ttoi(number));
+	MainDlg->Log(L"技能冷却已开启");
 }

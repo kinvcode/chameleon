@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "dnf.h"
 #include "chameleonDlg.h"
-#include "constant.h"
 #include "overloading.h"
 
 extern CchameleonDlg* MainDlg;
@@ -549,7 +548,7 @@ UINT manualThread(LPVOID pParam)
 		}
 
 		// 如果在图内
-		if (dnf->readInt(C_GAME_STATUS) == 3)
+		if (dnf->readInt(dnf->C_GAME_STATUS) == 3)
 		{
 			// 开启拾取
 			if (MainDlg->_switch_gather_items.GetCheck() == BST_CHECKED)
@@ -576,7 +575,7 @@ UINT manualThread(LPVOID pParam)
 		}
 
 		// 如果不在图内
-		if (dnf->readInt(C_GAME_STATUS) <= 2)
+		if (dnf->readInt(dnf->C_GAME_STATUS) <= 2)
 		{
 			first_room = false;
 			clearance_judge = false;
@@ -685,10 +684,50 @@ UINT autolThread(LPVOID pParam)
 	}
 }
 
+UINT userPointerThread(LPVOID pParam)
+{
+	DNF* dnf = (DNF*)pParam;
+
+	bool statusChange = false;
+	__int64 emptyAddress;
+
+	while (true) 
+	{
+		if (dnf->readInt(0x140000000) != 0x905A4D) {
+			// 游戏结束
+			statusChange = false;
+			break;
+		}
+
+		if (dnf->judgeGameStatus() >= 1 && statusChange == false) 
+		{
+			emptyAddress = dnf->C_EMPTY_ADDRESS + 4000;
+			dnf->C_USER_POINTER = dnf->getUserPointer(emptyAddress);
+			dnf->C_USER = emptyAddress;
+			if (dnf->C_USER_POINTER == 0) 
+			{
+				continue;
+			}
+			statusChange = true;
+
+		}
+		else if(dnf->judgeGameStatus() == 0)
+		{
+			statusChange = false;
+		}
+		dnf->programDelay(300);
+	}
+}
+
 void DNF::manualThreadControl()
 {
 	// 开启线程逻辑
 	AfxBeginThread(manualThread, this);
+}
+
+void DNF::userPonterUpdate()
+{
+	AfxBeginThread(userPointerThread, this);
 }
 
 void DNF::superScore()
@@ -771,27 +810,27 @@ COORDINATE DNF::readCoordinate(__int64 address)
 
 void DNF::firstRoomFunctions()
 {
-	if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
-	{
-		CString attack_speed, move_speed, casting_speed;
-		MainDlg->_attack_speed.GetWindowText(attack_speed);
-		MainDlg->_move_speed.GetWindowText(move_speed);
-		MainDlg->_casting_speed.GetWindowText(casting_speed);
-		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
-	}
+	//if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
+	//{
+	//	CString attack_speed, move_speed, casting_speed;
+	//	MainDlg->_attack_speed.GetWindowText(attack_speed);
+	//	MainDlg->_move_speed.GetWindowText(move_speed);
+	//	MainDlg->_casting_speed.GetWindowText(casting_speed);
+	//	threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+	//}
 
 	if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
 	{
 		superScore();
 	}
 
-	if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED) 
-	{
-		CString num;
-		MainDlg->_cool_down.GetWindowText(num);
-		float number = (float)_ttof(num);
-		skillCoolDown(number);
-	}
+	//if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED) 
+	//{
+	//	CString num;
+	//	MainDlg->_cool_down.GetWindowText(num);
+	//	float number = (float)_ttof(num);
+	//	skillCoolDown(number);
+	//}
 }
 
 void DNF::clearanceEvent()
@@ -803,4 +842,18 @@ void DNF::skillCoolDown(float num)
 {
 	encrypt(readLong(C_USER)+ C_FLOAT_COOL_DOWN2, num);
 	MainDlg->Log(L"技能冷却已开启");
+}
+
+__int64 DNF::getUserPointer(__int64 emptyAddress) 
+{
+	std::vector<byte>asm_code;
+
+	asm_code = makeByteArray({ 72, 131, 236,100});
+	asm_code = asm_code + makeByteArray({ 72,184 }) + intToBytes(C_USER_CALL);
+	asm_code = asm_code + makeByteArray({255,208});
+	asm_code = asm_code + makeByteArray({ 72,163 }) + intToBytes(emptyAddress);
+	asm_code = asm_code + makeByteArray({72,131,196,100});
+	memoryAssambly(asm_code);
+
+	return readLong(emptyAddress);
 }

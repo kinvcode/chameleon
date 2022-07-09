@@ -71,4 +71,5 @@ public:
 	CEdit _cool_down;
 	CButton _switch_cool_down;
 	afx_msg void OnEnChangeEdit9();
+	afx_msg void OnBnClickedButton6();
 };
