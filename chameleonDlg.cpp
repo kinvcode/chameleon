@@ -49,12 +49,13 @@ void CchameleonDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK5, _switch_gather_items);
 	DDX_Control(pDX, IDC_EDIT9, _cool_down);
 	DDX_Control(pDX, IDC_CHECK6, _switch_cool_down);
+	DDX_Control(pDX, IDC_EDIT10, _damage_value);
+	DDX_Control(pDX, IDC_CHECK7, _switch_hook_damage);
 }
 
 BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	//	ON_BN_CLICKED(IDC_BUTTON1, &CchameleonDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON1, &CchameleonDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CchameleonDlg::OnBnClickedButton2)
 	ON_WM_CLOSE()
@@ -64,6 +65,9 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_EN_CHANGE(IDC_EDIT9, &CchameleonDlg::OnEnChangeEdit9)
 	ON_BN_CLICKED(IDC_BUTTON6, &CchameleonDlg::OnBnClickedButton6)
 	ON_BN_CLICKED(IDC_BUTTON7, &CchameleonDlg::OnBnClickedButton7)
+	ON_BN_CLICKED(IDC_CHECK7, &CchameleonDlg::OnBnClickedCheck7)
+	ON_BN_CLICKED(IDC_CHECK1, &CchameleonDlg::OnBnClickedCheck1)
+	ON_BN_CLICKED(IDC_CHECK6, &CchameleonDlg::OnBnClickedCheck6)
 END_MESSAGE_MAP()
 
 
@@ -90,11 +94,13 @@ BOOL CchameleonDlg::OnInitDialog()
 
 	_cool_down.SetWindowText(L"50");
 
+	_damage_value.SetWindowText(L"156688");
+
 	_switch_score.SetCheck(BST_CHECKED);
 	_switch_three_speed.SetCheck(BST_CHECKED);
 	_switch_gather_items.SetCheck(BST_CHECKED);
 	_switch_cool_down.SetCheck(BST_CHECKED);
-	
+
 
 	_user_name.SetWindowText(L"旭旭宝宝");
 
@@ -201,8 +207,17 @@ void CchameleonDlg::OnBnClickedButton2()
 void CchameleonDlg::Log(wchar_t* msg)
 {
 	Console.SetSel(-1);
-	Console.ReplaceSel(L"\r\n");
 	Console.ReplaceSel(msg);
+	Console.SetSel(-1);
+	Console.ReplaceSel(L"\r\n");
+}
+
+void CchameleonDlg::Log(CString msg)
+{
+	Console.SetSel(-1);
+	Console.ReplaceSel(msg);
+	Console.SetSel(-1);
+	Console.ReplaceSel(L"\r\n");
 }
 
 
@@ -291,9 +306,9 @@ void CchameleonDlg::OnBnClickedButton5()
 	//	unsigned int RetSw;
 	//	RetSw = M_KeyPress(msdk_handle, Keyboard_a, 1);
 	//}
-	
+
 	// 召唤仓库
-	_DNF->skillCall(_DNF->readLong(_DNF->C_USER),51200,999999,100,100,100,1);
+	_DNF->skillCall(_DNF->readLong(_DNF->C_USER), 51200, 999999, 100, 100, 100, 1);
 }
 
 
@@ -301,7 +316,7 @@ void CchameleonDlg::OnEnChangeEdit9()
 {
 	CString number;
 	_cool_down.GetWindowText(number);
-	
+
 	int num = _ttoi(number);
 
 	if (num < 0 || num > 80)
@@ -319,17 +334,91 @@ void CchameleonDlg::OnBnClickedButton6()
 	_cool_down.GetWindowText(number);
 
 	_DNF->encrypt(_DNF->readLong(_DNF->C_USER) + _DNF->C_FLOAT_COOL_DOWN2, _ttoi(number));
-	MainDlg->Log(L"技能冷却已开启");
+	Log(L"技能冷却已开启");
 }
 
 
 void CchameleonDlg::OnBnClickedButton7()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	// 获取人物坐标
+	COORDINATE user_coor, door_coor, cur_room;
+	__int64 coor;
+	user_coor = _DNF->readCoordinate(_DNF->readLong(_DNF->C_USER));
 
-	wchar_t wcs[MAX_PATH];
-	GetCurrentDirectory(sizeof(wcs), wcs);
-	wcscat(wcs, L"\\Randw.sys");
+	CString str1, str2;
+	str1.Format(_T("人物坐标X:%d"), user_coor.x);
+	str2.Format(_T("人物坐标Y:%d"), user_coor.y);
+	Log(str1);
+	Log(str2);
 
-	MainDlg->Log(wcs);
+
+	//cur_room = _DNF->judgeCurrentRoom();
+
+	__int64 pass_room_data = _DNF->passRoomData(0);
+	coor = pass_room_data;
+	int start_x = _DNF->readInt(coor + 0);
+	int start_y = _DNF->readInt(coor + 4);
+	int end_x = _DNF->readInt(coor + 8);
+	int end_y = _DNF->readInt(coor + 12);
+
+	CString start_x_str, start_y_str, end_x_str, end_y_str;
+	start_x_str.Format(_T("开始坐标X:%d"), start_x);
+	start_y_str.Format(_T("开始坐标Y:%d"), start_y);
+	end_x_str.Format(_T("结束坐标X:%d"), end_x);
+	end_y_str.Format(_T("结束坐标Y:%d"), end_y);
+	Log(start_x_str);
+	Log(start_y_str);
+	Log(end_x_str);
+	Log(end_y_str);
+
+}
+
+
+void CchameleonDlg::OnBnClickedCheck7()
+{
+	if (_switch_hook_damage.GetCheck() == BST_CHECKED)
+	{
+		_DNF->hookDamage(true);
+		Log(L"HOOK伤害：开！");
+	}
+	else {
+		_DNF->hookDamage(true);
+		Log(L"HOOK伤害：关！");
+	}
+}
+
+
+void CchameleonDlg::OnBnClickedCheck1()
+{
+	if (_switch_three_speed.GetCheck() == BST_CHECKED)
+	{
+		CString attack_speed, move_speed, casting_speed;
+		_attack_speed.GetWindowText(attack_speed);
+		_move_speed.GetWindowText(move_speed);
+		_casting_speed.GetWindowText(casting_speed);
+		_DNF->threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+		Log(L"三速：开！");
+	}
+	else {
+		_DNF->threeSpeed(0, 0, 0);
+		Log(L"三速：关！");
+	}
+}
+
+
+void CchameleonDlg::OnBnClickedCheck6()
+{
+	if (_switch_cool_down.GetCheck() == BST_CHECKED)
+	{
+		CString num;
+		MainDlg->_cool_down.GetWindowText(num);
+		float number = (float)_ttof(num);
+		_DNF->skillCoolDown(number);
+		Log(L"技能冷却缩减：开！");
+	}
+	else {
+		_DNF->skillCoolDown(0);
+		Log(L"技能冷却缩减：关！");
+	}
 }

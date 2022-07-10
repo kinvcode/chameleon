@@ -624,15 +624,15 @@ UINT autolThread(LPVOID pParam)
 					if (dnf->judgeClearance())
 					{
 						first_room = false;
-						if (clearance) 
+						if (clearance)
 						{
 							dnf->gatherItems();
 							Gabriel += 1;
-							if (Gabriel == 15) 
+							if (Gabriel == 15)
 							{
 								//再次挑战();
 							}
-							if (Gabriel == 30) 
+							if (Gabriel == 30)
 							{
 								//返回城镇();
 							}
@@ -654,13 +654,13 @@ UINT autolThread(LPVOID pParam)
 					if (!dnf->judgeHaveItem())
 					{
 						// 过图处理
-						if (!first_room) 
+						if (!first_room)
 						{
 							first_room = true;
 							dnf->firstRoomFunctions();
 						}
 						handle_room_times += 1;
-						if (handle_room_times >= 3) 
+						if (handle_room_times >= 3)
 						{
 							// 自动寻路(); 未完成
 							handle_room_times = 0;
@@ -682,6 +682,7 @@ UINT autolThread(LPVOID pParam)
 
 		dnf->programDelay(300);
 	}
+	return 0;
 }
 
 UINT userPointerThread(LPVOID pParam)
@@ -691,7 +692,7 @@ UINT userPointerThread(LPVOID pParam)
 	bool statusChange = false;
 	__int64 emptyAddress;
 
-	while (true) 
+	while (true)
 	{
 		if (dnf->readInt(0x140000000) != 0x905A4D) {
 			// 游戏结束
@@ -699,24 +700,25 @@ UINT userPointerThread(LPVOID pParam)
 			break;
 		}
 
-		if (dnf->judgeGameStatus() >= 1 && statusChange == false) 
+		if (dnf->judgeGameStatus() >= 1 && statusChange == false)
 		{
 			emptyAddress = dnf->C_EMPTY_ADDRESS + 4000;
 			dnf->C_USER_POINTER = dnf->getUserPointer(emptyAddress);
 			dnf->C_USER = emptyAddress;
-			if (dnf->C_USER_POINTER == 0) 
+			if (dnf->C_USER_POINTER == 0)
 			{
 				continue;
 			}
 			statusChange = true;
 
 		}
-		else if(dnf->judgeGameStatus() == 0)
+		else if (dnf->judgeGameStatus() == 0)
 		{
 			statusChange = false;
 		}
 		dnf->programDelay(300);
 	}
+	return 0;
 }
 
 void DNF::manualThreadControl()
@@ -810,27 +812,10 @@ COORDINATE DNF::readCoordinate(__int64 address)
 
 void DNF::firstRoomFunctions()
 {
-	//if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
-	//{
-	//	CString attack_speed, move_speed, casting_speed;
-	//	MainDlg->_attack_speed.GetWindowText(attack_speed);
-	//	MainDlg->_move_speed.GetWindowText(move_speed);
-	//	MainDlg->_casting_speed.GetWindowText(casting_speed);
-	//	threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
-	//}
-
 	if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
 	{
 		superScore();
 	}
-
-	//if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED) 
-	//{
-	//	CString num;
-	//	MainDlg->_cool_down.GetWindowText(num);
-	//	float number = (float)_ttof(num);
-	//	skillCoolDown(number);
-	//}
 }
 
 void DNF::clearanceEvent()
@@ -838,22 +823,57 @@ void DNF::clearanceEvent()
 
 }
 
-void DNF::skillCoolDown(float num) 
+void DNF::skillCoolDown(float num)
 {
-	encrypt(readLong(C_USER)+ C_FLOAT_COOL_DOWN2, num);
-	MainDlg->Log(L"技能冷却已开启");
+	encrypt(readLong(C_USER) + C_FLOAT_COOL_DOWN2, num);
 }
 
-__int64 DNF::getUserPointer(__int64 emptyAddress) 
+__int64 DNF::getUserPointer(__int64 emptyAddress)
 {
 	std::vector<byte>asm_code;
 
-	asm_code = makeByteArray({ 72, 131, 236,100});
+	asm_code = makeByteArray({ 72, 131, 236,100 });
 	asm_code = asm_code + makeByteArray({ 72,184 }) + intToBytes(C_USER_CALL);
-	asm_code = asm_code + makeByteArray({255,208});
+	asm_code = asm_code + makeByteArray({ 255,208 });
 	asm_code = asm_code + makeByteArray({ 72,163 }) + intToBytes(emptyAddress);
-	asm_code = asm_code + makeByteArray({72,131,196,100});
+	asm_code = asm_code + makeByteArray({ 72,131,196,100 });
 	memoryAssambly(asm_code);
 
 	return readLong(emptyAddress);
+}
+
+void DNF::hookDamage(bool on)
+{
+	CString value;
+	MainDlg->_damage_value.GetWindowText(value);
+
+	std::vector<byte>damge_data;
+
+	__int64 damage_address = C_GLOBAL_ADDRESS;
+	__int64 damage_value = _ttoi(value);
+
+	if (on) {
+		damge_data = readByteArray(damage_address, 10);
+		writeByteArray(damage_address, (makeByteArray({ 72,190 }) + intToBytes(damage_value)));
+	}
+	else {
+		writeByteArray(damage_address, damge_data);
+	}
+}
+
+__int64 DNF::passRoomData(int direction)
+{
+	__int64 empty_address = C_EMPTY_ADDRESS + 1450;
+	__int64 room_data = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_PASS_ROOM_OFFSET);
+
+	std::vector<byte>asm_code;
+	asm_code = makeByteArray({ 72,129,236,0,1,0,0 });
+	asm_code = makeByteArray({ 72,185 }) + intToBytes(room_data);
+	asm_code = makeByteArray({ 186 }) + intToBytes(direction);
+	asm_code = makeByteArray({ 72,184 }) + intToBytes(C_COORDINATE_PASS_ROOM);
+	asm_code = makeByteArray({ 255,208 });
+	asm_code = makeByteArray({ 72,163 }) + intToBytes(empty_address);
+	asm_code = makeByteArray({ 72,129,196,0,1,0,0 });
+	memoryAssambly(asm_code);
+	return readLong(empty_address);
 }

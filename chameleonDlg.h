@@ -53,6 +53,7 @@ public:
 	CButton changeNameBtn;
 	afx_msg void OnBnClickedButton2();
 	void Log(wchar_t* msg);
+	void Log(CString msg);
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedButton3();
 	afx_msg void OnBnClickedButton4();
@@ -74,4 +75,9 @@ public:
 	afx_msg void OnEnChangeEdit9();
 	afx_msg void OnBnClickedButton6();
 	afx_msg void OnBnClickedButton7();
+	CEdit _damage_value;
+	CButton _switch_hook_damage;
+	afx_msg void OnBnClickedCheck7();
+	afx_msg void OnBnClickedCheck1();
+	afx_msg void OnBnClickedCheck6();
 };

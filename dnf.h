@@ -59,6 +59,9 @@ public:
 	int C_OBJECT_COORDINATE = 0x168; // 对象坐标
 	__int64 C_AUTO_PICKUP = 0x143CB9F73; // 自动捡物
 	int C_FLOAT_COOL_DOWN2 = 0x2288; // 浮点冷却2
+	__int64 C_GLOBAL_ADDRESS = 0x143C704BE; // 全局基址
+	int C_PASS_ROOM_OFFSET = 0xF0; // 顺图偏移
+	__int64 C_COORDINATE_PASS_ROOM = 0x142D66F90; // 坐标顺图CALL
 
 	// 组包数据
 
@@ -177,4 +180,10 @@ public:
 
 	// 获取人物指针
 	__int64 getUserPointer(__int64 emptyAddress);
+
+	// HOOK伤害
+	void hookDamage(bool on);
+
+	// 顺图数据
+	__int64 passRoomData(int direction);
 };
