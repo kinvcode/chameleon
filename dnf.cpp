@@ -868,12 +868,12 @@ __int64 DNF::passRoomData(int direction)
 
 	std::vector<byte>asm_code;
 	asm_code = makeByteArray({ 72,129,236,0,1,0,0 });
-	asm_code = makeByteArray({ 72,185 }) + intToBytes(room_data);
-	asm_code = makeByteArray({ 186 }) + intToBytes(direction);
-	asm_code = makeByteArray({ 72,184 }) + intToBytes(C_COORDINATE_PASS_ROOM);
-	asm_code = makeByteArray({ 255,208 });
-	asm_code = makeByteArray({ 72,163 }) + intToBytes(empty_address);
-	asm_code = makeByteArray({ 72,129,196,0,1,0,0 });
+	asm_code = asm_code + makeByteArray({ 72,185 }) + intToBytes(room_data);
+	asm_code = asm_code + makeByteArray({ 186 }) + intToBytes(direction);
+	asm_code = asm_code + makeByteArray({ 72,184 }) + intToBytes(C_COORDINATE_PASS_ROOM);
+	asm_code = asm_code + makeByteArray({ 255,208 });
+	asm_code = asm_code + makeByteArray({ 72,163 }) + intToBytes(empty_address);
+	asm_code = asm_code + makeByteArray({ 72,129,196,0,1,0,0 });
 	memoryAssambly(asm_code);
 	return readLong(empty_address);
 }
