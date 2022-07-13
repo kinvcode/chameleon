@@ -90,11 +90,11 @@ BOOL CchameleonDlg::OnInitDialog()
 	// 初始化数值
 	_attack_speed.SetWindowText(L"1000");
 	_casting_speed.SetWindowText(L"2000");
-	_move_speed.SetWindowText(L"800");
+	_move_speed.SetWindowText(L"1000");
 
-	_cool_down.SetWindowText(L"50");
+	_cool_down.SetWindowText(L"80");
 
-	_damage_value.SetWindowText(L"156688");
+	_damage_value.SetWindowText(L"196688");
 
 	_switch_score.SetCheck(BST_CHECKED);
 	_switch_three_speed.SetCheck(BST_CHECKED);
@@ -342,18 +342,9 @@ void CchameleonDlg::OnBnClickedButton7()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	// 获取人物坐标
-	COORDINATE user_coor, door_coor, cur_room;
+	COORDINATE user_coor;
 	__int64 coor;
 	user_coor = _DNF->readCoordinate(_DNF->readLong(_DNF->C_USER));
-
-	CString str1, str2;
-	str1.Format(_T("人物坐标X:%d"), user_coor.x);
-	str2.Format(_T("人物坐标Y:%d"), user_coor.y);
-	Log(str1);
-	Log(str2);
-
-
-	//cur_room = _DNF->judgeCurrentRoom();
 
 	__int64 pass_room_data = _DNF->passRoomData(0);
 	coor = pass_room_data;
@@ -361,16 +352,6 @@ void CchameleonDlg::OnBnClickedButton7()
 	int start_y = _DNF->readInt(coor + 4);
 	int end_x = _DNF->readInt(coor + 8);
 	int end_y = _DNF->readInt(coor + 12);
-
-	CString start_x_str, start_y_str, end_x_str, end_y_str;
-	start_x_str.Format(_T("开始坐标X:%d"), start_x);
-	start_y_str.Format(_T("开始坐标Y:%d"), start_y);
-	end_x_str.Format(_T("结束坐标X:%d"), end_x);
-	end_y_str.Format(_T("结束坐标Y:%d"), end_y);
-	Log(start_x_str);
-	Log(start_y_str);
-	Log(end_x_str);
-	Log(end_y_str);
 
 }
 
