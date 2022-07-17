@@ -47,42 +47,42 @@ BOOL CchameleonApp::InitInstance()
 
 
 	// 判断应用是否以system身份启动
-	//CString sysName = L"SYSTEM";
-	//DWORD dwSize = MAX_PATH;
-	//TCHAR* pszName = new TCHAR[dwSize];
-	//GetUserName(pszName, &dwSize);
+	CString sysName = L"SYSTEM";
+	DWORD dwSize = MAX_PATH;
+	TCHAR* pszName = new TCHAR[dwSize];
+	GetUserName(pszName, &dwSize);
 
-	//if (pszName != sysName) {
-	//	// 关闭cmd
-	//	TerminateProcess(OpenProcess(PROCESS_ALL_ACCESS, FALSE, ReadWrite::TakePid(L"cmd.exe")), 0);
+	if (pszName != sysName) {
+		// 关闭cmd
+		TerminateProcess(OpenProcess(PROCESS_ALL_ACCESS, FALSE, ReadWrite::TakePid(L"cmd.exe")), 0);
 
-	//	char path[MAX_PATH];
-	//	memset(path, 0, MAX_PATH);
-	//	DWORD nSize = ::GetModuleFileNameA(NULL, path, MAX_PATH);
-	//	WinExec("C:\\Windows\\System32\\cmd.exe", SW_HIDE);
-	//	ReadWrite::asSystem(ReadWrite::TakePid(L"winlogon.exe"), path);
-	//	ExitProcess(0);
+		char path[MAX_PATH];
+		memset(path, 0, MAX_PATH);
+		DWORD nSize = ::GetModuleFileNameA(NULL, path, MAX_PATH);
+		WinExec("C:\\Windows\\System32\\cmd.exe", SW_HIDE);
+		ReadWrite::asSystem(ReadWrite::TakePid(L"winlogon.exe"), path);
+		ExitProcess(0);
 
-	//	TerminateProcess(OpenProcess(PROCESS_ALL_ACCESS, FALSE, ReadWrite::TakePid(L"cmd.exe")), 0);
-	//}
+		TerminateProcess(OpenProcess(PROCESS_ALL_ACCESS, FALSE, ReadWrite::TakePid(L"cmd.exe")), 0);
+	}
 
 	// 加载驱动
-	wchar_t sys_path[MAX_PATH];
-	GetCurrentDirectory(sizeof(sys_path), sys_path);
-	wcscat_s(sys_path, L"\\Randw.sys");
+	//wchar_t sys_path[MAX_PATH];
+	//GetCurrentDirectory(sizeof(sys_path), sys_path);
+	//wcscat_s(sys_path, L"\\Randw.sys");
 
-	BOOL loadResult = FALSE;
-	// 创建并启动服务
-	loadResult = SystemServiceOperate(sys_path, 0);
-	if (FALSE == loadResult)
-	{
-		AfxMessageBox(L"创建驱动失败");
-	}
-	loadResult = SystemServiceOperate(sys_path, 1);
-	if (FALSE == loadResult)
-	{
-		AfxMessageBox(L"启动驱动失败");
-	}
+	//BOOL loadResult = FALSE;
+	//// 创建并启动服务
+	//loadResult = SystemServiceOperate(sys_path, 0);
+	//if (FALSE == loadResult)
+	//{
+	//	AfxMessageBox(L"创建驱动失败");
+	//}
+	//loadResult = SystemServiceOperate(sys_path, 1);
+	//if (FALSE == loadResult)
+	//{
+	//	AfxMessageBox(L"启动驱动失败");
+	//}
 
 
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要

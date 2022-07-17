@@ -100,6 +100,7 @@ BOOL CchameleonDlg::OnInitDialog()
 	_switch_three_speed.SetCheck(BST_CHECKED);
 	_switch_gather_items.SetCheck(BST_CHECKED);
 	_switch_cool_down.SetCheck(BST_CHECKED);
+	_switch_hook_damage.SetCheck(BST_CHECKED);
 
 
 	_user_name.SetWindowText(L"旭旭宝宝");
@@ -184,6 +185,7 @@ void CchameleonDlg::OnBnClickedButton1()
 		Log(L"初始化成功!");
 
 		// 启动读取人物基址线程
+		_DNF->userPonterUpdate();
 		// 启动手动线程
 		_DNF->manualThreadControl();
 	}
@@ -393,7 +395,7 @@ void CchameleonDlg::OnBnClickedCheck6()
 	if (_switch_cool_down.GetCheck() == BST_CHECKED)
 	{
 		CString num;
-		MainDlg->_cool_down.GetWindowText(num);
+		_cool_down.GetWindowText(num);
 		float number = (float)_ttof(num);
 		_DNF->skillCoolDown(number);
 		Log(L"技能冷却缩减：开！");

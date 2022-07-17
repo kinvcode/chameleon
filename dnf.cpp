@@ -571,6 +571,7 @@ UINT manualThread(LPVOID pParam)
 				clearance_judge = true;
 
 				// 关闭图内功能
+				dnf->closeDungeonFunctions();
 			}
 		}
 
@@ -816,6 +817,28 @@ void DNF::firstRoomFunctions()
 	{
 		superScore();
 	}
+
+	if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED)
+	{
+		CString num;
+		MainDlg->_cool_down.GetWindowText(num);
+		float number = (float)_ttof(num);
+		skillCoolDown(number);
+	}
+
+	if (MainDlg->_switch_hook_damage.GetCheck() == BST_CHECKED)
+	{
+		hookDamage(true);
+	}
+
+	if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
+	{
+		CString attack_speed, move_speed, casting_speed;
+		MainDlg->_attack_speed.GetWindowText(attack_speed);
+		MainDlg->_move_speed.GetWindowText(move_speed);
+		MainDlg->_casting_speed.GetWindowText(casting_speed);
+		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+	}
 }
 
 void DNF::clearanceEvent()
@@ -876,4 +899,11 @@ __int64 DNF::passRoomData(int direction)
 	asm_code = asm_code + makeByteArray({ 72,129,196,0,1,0,0 });
 	memoryAssambly(asm_code);
 	return readLong(empty_address);
+}
+
+void DNF::closeDungeonFunctions()
+{
+	skillCoolDown(0);
+	threeSpeed(0, 0, 0);
+	hookDamage(false);
 }
