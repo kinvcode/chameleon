@@ -354,7 +354,6 @@ void CchameleonDlg::OnBnClickedButton7()
 	int start_y = _DNF->readInt(coor + 4);
 	int end_x = _DNF->readInt(coor + 8);
 	int end_y = _DNF->readInt(coor + 12);
-
 }
 
 
