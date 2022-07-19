@@ -187,6 +187,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\ext\001\chameleon\usbhidkeycode.h" />
     <ClInclude Include="chameleon.h" />
     <ClInclude Include="chameleonDlg.h" />
     <ClInclude Include="constant.h" />

@@ -640,12 +640,9 @@ UINT autoThread(LPVOID pParam)
 						// 暂时不处理
 					}
 
-					// 输出目标名称
-					//CString name2;
-					//CStringA name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + dnf->C_NAME_OFFSET), 50));
-					//name2 = name;
-					//MainDlg->Log(name2);
 
+
+					// 需要清理的怪物或建筑
 					if (monster_type == 529 || monster_type == 273) {
 						if (monster_address != dnf->readLong(dnf->C_USER)) {
 							if (monster_camp != 0 && monster_code != 0 && monster_blood != 0) {
@@ -653,11 +650,23 @@ UINT autoThread(LPVOID pParam)
 								// 移动人物到此怪物地址
 								COORDINATE monster_coor = dnf->readCoordinate(monster_address);
 
+								// 输出目标名称
+								CString name2;
+								CStringA name;
+								name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + dnf->C_NAME_OFFSET), 50));
+								name2 = name;
+								MainDlg->Log(name2);
+								// 到达目标后立即进行攻击（无论目标是否已经移动）
 								dnf->runToDestination(monster_coor.x, monster_coor.y, false);
+								// 攻击
+								M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
+								
 								break;
 							}
 						}
 					}
+
+					// 如果是物品，则进行捡物品
 				}
 			}
 			else {
@@ -957,12 +966,11 @@ void DNF::closeDungeonFunctions()
 }
 
 // 跑到目标
-void DNF::runToDestination(int x, int y, bool is_room = false)
+BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 {
 	if (x < 1 || y < 1) {
-		return;
+		return false;
 	}
-
 
 	__int64 a, b;
 	if (is_room) {
@@ -973,10 +981,10 @@ void DNF::runToDestination(int x, int y, bool is_room = false)
 	COORDINATE user_coor = readCoordinate(readLong(C_USER));
 
 	CString start_x_str, start_y_str, end_x_str, end_y_str;
-	start_x_str.Format(_T("开始坐标X:%d"), user_coor.x);
-	start_y_str.Format(_T("开始坐标Y:%d"), user_coor.y);
-	end_x_str.Format(_T("结束坐标X:%d"), x);
-	end_y_str.Format(_T("结束坐标Y:%d"), y);
+	start_x_str.Format(_T("人物坐标X:%d"), user_coor.x);
+	start_y_str.Format(_T("人物坐标Y:%d"), user_coor.y);
+	end_x_str.Format(_T("怪物坐标X:%d"), x);
+	end_y_str.Format(_T("怪物坐标Y:%d"), y);
 	MainDlg->Log(start_x_str);
 	MainDlg->Log(start_y_str);
 	MainDlg->Log(end_x_str);
@@ -1014,13 +1022,13 @@ void DNF::runToDestination(int x, int y, bool is_room = false)
 
 		// 如果切换到后台
 		if (!windowIsTop()) {
-			MainDlg->Log(L"切换到后台，停止跑图");
+			//MainDlg->Log(L"切换到后台，停止跑图");
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			break;
 		}
 
 		if (judgeGameStatus() != 3) {
-			MainDlg->Log(L"不在图内，停止跑图");
+			//MainDlg->Log(L"不在图内，停止跑图");
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			break;
 		}
@@ -1044,17 +1052,44 @@ void DNF::runToDestination(int x, int y, bool is_room = false)
 			}
 		}
 
+		// 优先到达Y坐标
+		if (y_arrived == false) {
+			if (direction_y == Keyboard_UpArrow) {
+				if (y - user_coor.y > 10) {
+					//MainDlg->Log(L"超出Y范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+			else {
+				if (user_coor.y - y > 10) {
+					//MainDlg->Log(L"超出Y范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+
+			if (abs(user_coor.y - y) > 10) {
+				isFirst = false;
+				continue;
+			}
+			else {
+				keyboardUp(direction_y);
+				y_arrived = true;
+			}
+		}
+
 		if (x_arrived == false) {
 			if (direction_x == Keyboard_RightArrow) {
 				if (user_coor.x - x > 10) {
-					MainDlg->Log(L"超出X范围，停止");
+					//MainDlg->Log(L"超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
 			}
 			else {
 				if (x - user_coor.x > 10) {
-					MainDlg->Log(L"超出X范围，停止");
+					//MainDlg->Log(L"超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
@@ -1069,49 +1104,23 @@ void DNF::runToDestination(int x, int y, bool is_room = false)
 			}
 		}
 
-		if (y_arrived == false) {
-			if (direction_y == Keyboard_UpArrow) {
-				if (y - user_coor.y > 10) {
-					MainDlg->Log(L"超出Y范围，停止");
-					M_ReleaseAllKey(MainDlg->msdk_handle);
-					break;
-				}
-			}
-			else {
-				if (user_coor.y - y > 10) {
-					MainDlg->Log(L"超出Y范围，停止");
-					M_ReleaseAllKey(MainDlg->msdk_handle);
-					break;
-				}
-			}
 
-
-			if (abs(user_coor.y - y) > 10) {
-				isFirst = false;
-				continue;
-			}
-			else {
-				keyboardUp(direction_y);
-				y_arrived = true;
-			}
-		}
 
 		if (x_arrived && y_arrived) {
 			M_ReleaseAllKey(MainDlg->msdk_handle);
-
-			// 进行攻击
-			M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
-
+			return true;
 			break;
 		}
 
-		programDelay(100);
+		//programDelay(100);
 	}
 
-	handleEvents();
+	//handleEvents();
 
-	MainDlg->Log(L"跑图结束");
+	//MainDlg->Log(L"跑图结束");
 	M_ReleaseAllKey(MainDlg->msdk_handle);
+
+	return false;
 }
 
 // 走到目标

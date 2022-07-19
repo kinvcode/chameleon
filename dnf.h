@@ -205,7 +205,7 @@ public:
 	void closeDungeonFunctions();
 
 	// 跑到目标
-	void runToDestination(int x, int y, bool is_room);
+	BOOL runToDestination(int x, int y, bool is_room);
 
 	// 走到目标
 	void walkToDestination();

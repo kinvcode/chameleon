@@ -415,5 +415,9 @@ void CchameleonDlg::OnBnClickedCheck6()
 
 void CchameleonDlg::OnBnClickedButton8()
 {
+	Console.SetSel(0, -1);
+	Console.ReplaceSel(_T(""));
+	//Console.Clear();
+	//UpdateData(FALSE);
 	M_ReleaseAllKey(msdk_handle);
 }

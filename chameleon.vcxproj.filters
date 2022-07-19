@@ -54,6 +54,9 @@
     <ClInclude Include="usbhidkeycode.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\ext\001\chameleon\usbhidkeycode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="chameleon.cpp">
