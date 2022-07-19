@@ -2,6 +2,8 @@
 #include "dnf.h"
 #include "chameleonDlg.h"
 #include "overloading.h"
+#include "msdk.h"
+#include "UsbHidKeyCode.h"
 
 extern CchameleonDlg* MainDlg;
 
@@ -591,7 +593,7 @@ UINT manualThread(LPVOID pParam)
 	return 0;   // thread completed successfully
 }
 
-UINT autolThread(LPVOID pParam)
+UINT autoThread(LPVOID pParam)
 {
 	// 自动逻辑处理
 	DNF* dnf = (DNF*)pParam;
@@ -604,8 +606,10 @@ UINT autolThread(LPVOID pParam)
 	int Gabriel = 0;
 	int handle_room_times = 0;
 
+	//
+	dnf->penetrate(true);
 
-	if (true)
+	while (true)
 	{
 		if (dnf->judgeGameStatus() == 3)
 		{
@@ -615,7 +619,46 @@ UINT autolThread(LPVOID pParam)
 				handle_next_room = false;
 				clearance = false;
 				handle_room_times = 0;
-				//每图循环(); 未完成 // 打怪逻辑处理
+				//每图循环(); 未完成:跟随怪物，输出伤害 // 打怪逻辑处理
+
+				// 获取第一个怪物坐标
+				__int64 head_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + dnf->C_MAP_OFFSET) + 16) + dnf->C_HEAD_ADDRESS);
+				__int64 end_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + dnf->C_MAP_OFFSET) + 16) + dnf->C_END_ADDRESS);
+
+				int monster_quantity = (int)(end_address - head_address) / 24;
+
+				for (int i = 1; i <= monster_quantity; i++)
+				{
+					__int64 monster_address = dnf->readLong(dnf->readLong(head_address + (__int64)i * 24) + 16) - 32;
+					int monster_type = dnf->readInt(monster_address + dnf->C_TYPE_OFFSET);
+					int monster_camp = dnf->readInt(monster_address + dnf->C_CAMP_OFFSET);
+					int monster_code = dnf->readInt(monster_address + dnf->C_CODE_OFFSET);
+					int monster_blood = dnf->readInt(monster_address + dnf->C_MONSTER_BLOOD);
+
+					// 处理特殊对象：格蓝迪柱子
+					if (monster_code == 109051366 || monster_code == 109051365 || monster_code == 109051364) {
+						// 暂时不处理
+					}
+
+					// 输出目标名称
+					//CString name2;
+					//CStringA name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + dnf->C_NAME_OFFSET), 50));
+					//name2 = name;
+					//MainDlg->Log(name2);
+
+					if (monster_type == 529 || monster_type == 273) {
+						if (monster_address != dnf->readLong(dnf->C_USER)) {
+							if (monster_camp != 0 && monster_code != 0 && monster_blood != 0) {
+								// 获取到第一个怪物地址
+								// 移动人物到此怪物地址
+								COORDINATE monster_coor = dnf->readCoordinate(monster_address);
+
+								dnf->runToDestination(monster_coor.x, monster_coor.y, false);
+								break;
+							}
+						}
+					}
+				}
 			}
 			else {
 				// 如果当前是BOSS
@@ -728,6 +771,11 @@ void DNF::manualThreadControl()
 	AfxBeginThread(manualThread, this);
 }
 
+void DNF::autoThreadControl()
+{
+	AfxBeginThread(autoThread, this);
+}
+
 void DNF::userPonterUpdate()
 {
 	AfxBeginThread(userPointerThread, this);
@@ -751,10 +799,10 @@ void DNF::gatherItems()
 	COORDINATE monster_coordinate;
 	COORDINATE user_coordinate;
 
-	int monster_quantity = (int)(end_address - head_address) / 16;
+	int monster_quantity = (int)(end_address - head_address) / 24;
 	for (__int64 i = 1; i <= monster_quantity; i++)
 	{
-		__int64 monster_address = readLong(readLong(head_address + i * 16) + 16) - 32;
+		__int64 monster_address = readLong(readLong(head_address + i * 24) + 16) - 32;
 		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
 		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
 		int monster_code = readInt(monster_address + C_CODE_OFFSET);
@@ -906,4 +954,248 @@ void DNF::closeDungeonFunctions()
 	skillCoolDown(0);
 	threeSpeed(0, 0, 0);
 	hookDamage(false);
+}
+
+// 跑到目标
+void DNF::runToDestination(int x, int y, bool is_room = false)
+{
+	if (x < 1 || y < 1) {
+		return;
+	}
+
+
+	__int64 a, b;
+	if (is_room) {
+		a = readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X);
+		b = readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y);
+	}
+
+	COORDINATE user_coor = readCoordinate(readLong(C_USER));
+
+	CString start_x_str, start_y_str, end_x_str, end_y_str;
+	start_x_str.Format(_T("开始坐标X:%d"), user_coor.x);
+	start_y_str.Format(_T("开始坐标Y:%d"), user_coor.y);
+	end_x_str.Format(_T("结束坐标X:%d"), x);
+	end_y_str.Format(_T("结束坐标Y:%d"), y);
+	MainDlg->Log(start_x_str);
+	MainDlg->Log(start_y_str);
+	MainDlg->Log(end_x_str);
+	MainDlg->Log(end_y_str);
+
+	bool x_arrived = false, y_arrived = false, isFirst = true;
+
+	int direction_x;
+	int direction_y;
+
+	if (x > user_coor.x) {
+		direction_x = Keyboard_RightArrow;
+	}
+	else {
+		direction_x = Keyboard_LeftArrow;
+	}
+
+	if (y > user_coor.y) {
+		direction_y = Keyboard_DownArrow;
+	}
+	else {
+		direction_y = Keyboard_UpArrow;
+	}
+
+	while (true) {
+
+		user_coor = readCoordinate(readLong(C_USER));
+
+		if (isFirst) {
+			MainDlg->Log(L"重新跑图");
+			M_KeyPress(MainDlg->msdk_handle, direction_x, 1);
+			M_KeyDown(MainDlg->msdk_handle, direction_x);
+			M_KeyDown(MainDlg->msdk_handle, direction_y);
+		}
+
+		// 如果切换到后台
+		if (!windowIsTop()) {
+			MainDlg->Log(L"切换到后台，停止跑图");
+			M_ReleaseAllKey(MainDlg->msdk_handle);
+			break;
+		}
+
+		if (judgeGameStatus() != 3) {
+			MainDlg->Log(L"不在图内，停止跑图");
+			M_ReleaseAllKey(MainDlg->msdk_handle);
+			break;
+		}
+
+		// 判断人物动作
+		//if (decrypt(readLong(C_USER) + C_MOVEMENT_ID) != 14) {
+		//	MainDlg->Log(L"人物动作不符合，停止跑图");
+		//	// 弹起移动按键
+		//	keyboardUp(direction_x);
+		//	keyboardUp(direction_y);
+		//	break;
+		//}
+
+		// 判断房间：如果目标是下一个房间
+		if (is_room) {
+			if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != a ||
+				readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != b) {
+				// 弹起移动按键
+				M_ReleaseAllKey(MainDlg->msdk_handle);
+				break;
+			}
+		}
+
+		if (x_arrived == false) {
+			if (direction_x == Keyboard_RightArrow) {
+				if (user_coor.x - x > 10) {
+					MainDlg->Log(L"超出X范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+			else {
+				if (x - user_coor.x > 10) {
+					MainDlg->Log(L"超出X范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+			if (abs(user_coor.x - x) > 10) {
+				isFirst = false;
+				continue;
+			}
+			else {
+				keyboardUp(direction_x);
+				x_arrived = true;
+			}
+		}
+
+		if (y_arrived == false) {
+			if (direction_y == Keyboard_UpArrow) {
+				if (y - user_coor.y > 10) {
+					MainDlg->Log(L"超出Y范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+			else {
+				if (user_coor.y - y > 10) {
+					MainDlg->Log(L"超出Y范围，停止");
+					M_ReleaseAllKey(MainDlg->msdk_handle);
+					break;
+				}
+			}
+
+
+			if (abs(user_coor.y - y) > 10) {
+				isFirst = false;
+				continue;
+			}
+			else {
+				keyboardUp(direction_y);
+				y_arrived = true;
+			}
+		}
+
+		if (x_arrived && y_arrived) {
+			M_ReleaseAllKey(MainDlg->msdk_handle);
+
+			// 进行攻击
+			M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
+
+			break;
+		}
+
+		programDelay(100);
+	}
+
+	handleEvents();
+
+	MainDlg->Log(L"跑图结束");
+	M_ReleaseAllKey(MainDlg->msdk_handle);
+}
+
+// 走到目标
+void DNF::walkToDestination()
+{
+
+}
+
+void DNF::keyboardUp(int key)
+{
+	if (M_KeyState(MainDlg->msdk_handle, key) == 1) {
+		M_KeyUp(MainDlg->msdk_handle, key);
+	}
+}
+
+bool DNF::windowIsTop()
+{
+	// 判断DNF是否是置顶窗口
+	HWND cur_top_window = GetForegroundWindow();
+	HWND dnf_window = FindWindowA(NULL, "地下城与勇士");
+	return cur_top_window == dnf_window;
+}
+
+void DNF::penetrate(bool on)
+{
+	if (on) {
+		writeInt(readLong(C_USER) + C_PENETRATE_MAP, -255);
+		writeInt(readLong(C_USER) + C_PENETRATE_BUILDING, -255);
+	}
+	else {
+		writeInt(readLong(C_USER) + C_PENETRATE_MAP, 10);
+		writeInt(readLong(C_USER) + C_PENETRATE_BUILDING, 40);
+	}
+}
+
+void DNF::autoNextRoom()
+{
+	if (judgeGameStatus() != 3) {
+		return;
+	}
+
+	COORDINATE room_coor = judgeCurrentRoom();
+	COORDINATE boss_coor = judgeBossRoom();
+
+	if (room_coor.x == boss_coor.x && room_coor.y == boss_coor.y) {
+		return;
+	}
+
+	// 过图方向begin
+	int x, y;
+
+	// 地图数据begin
+	__int64 room_data = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	int room_index = decrypt(room_data + C_MAP_CODE);
+	int room_width = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 0);
+	int room_height = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 4);
+	long tmp_value = readLong(readLong(room_data + C_AISLE_OFFSET) + 32 * room_index + 8);
+	int aisle_num = room_width * room_height;
+
+
+	// 地图数据end
+
+	//x = 地图数据.地图走法[1].x - 地图数据.地图走法[2].x;
+	//y = 地图数据.地图走法[1].y - 地图数据.地图走法[2].y;
+
+	int direction = 0;
+	if (x == 0)
+	{
+		if (y == 1) {
+			direction = 1;
+		}
+		else {
+			direction = 2;
+		}
+	}
+	if (y == 0) {
+		if (x == 1) {
+			direction = 3;
+		}
+		else {
+			direction = 4;
+		}
+	}
+
+	// 过图方向end
+
 }

@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK7, &CchameleonDlg::OnBnClickedCheck7)
 	ON_BN_CLICKED(IDC_CHECK1, &CchameleonDlg::OnBnClickedCheck1)
 	ON_BN_CLICKED(IDC_CHECK6, &CchameleonDlg::OnBnClickedCheck6)
+	ON_BN_CLICKED(IDC_BUTTON8, &CchameleonDlg::OnBnClickedButton8)
 END_MESSAGE_MAP()
 
 
@@ -187,7 +188,8 @@ void CchameleonDlg::OnBnClickedButton1()
 		// 启动读取人物基址线程
 		_DNF->userPonterUpdate();
 		// 启动手动线程
-		_DNF->manualThreadControl();
+		//_DNF->manualThreadControl();
+		_DNF->autoThreadControl();
 	}
 }
 
@@ -344,16 +346,21 @@ void CchameleonDlg::OnBnClickedButton7()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	// 获取人物坐标
-	COORDINATE user_coor;
-	__int64 coor;
-	user_coor = _DNF->readCoordinate(_DNF->readLong(_DNF->C_USER));
+	//COORDINATE user_coor;
+	//__int64 coor;
+	//user_coor = _DNF->readCoordinate(_DNF->readLong(_DNF->C_USER));
 
-	__int64 pass_room_data = _DNF->passRoomData(0);
-	coor = pass_room_data;
-	int start_x = _DNF->readInt(coor + 0);
-	int start_y = _DNF->readInt(coor + 4);
-	int end_x = _DNF->readInt(coor + 8);
-	int end_y = _DNF->readInt(coor + 12);
+	//__int64 pass_room_data = _DNF->passRoomData(0);
+	//coor = pass_room_data;
+	//int start_x = _DNF->readInt(coor + 0);
+	//int start_y = _DNF->readInt(coor + 4);
+	//int end_x = _DNF->readInt(coor + 8);
+	//int end_y = _DNF->readInt(coor + 12);
+
+	//M_ReleaseAllKey(msdk_handle);
+
+	Sleep(1000);
+	_DNF->runToDestination(600, 150,false);
 }
 
 
@@ -403,4 +410,10 @@ void CchameleonDlg::OnBnClickedCheck6()
 		_DNF->skillCoolDown(0);
 		Log(L"技能冷却缩减：关！");
 	}
+}
+
+
+void CchameleonDlg::OnBnClickedButton8()
+{
+	M_ReleaseAllKey(msdk_handle);
 }

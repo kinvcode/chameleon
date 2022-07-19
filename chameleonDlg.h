@@ -80,4 +80,5 @@ public:
 	afx_msg void OnBnClickedCheck7();
 	afx_msg void OnBnClickedCheck1();
 	afx_msg void OnBnClickedCheck6();
+	afx_msg void OnBnClickedButton8();
 };

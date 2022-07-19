@@ -19,6 +19,9 @@ public:
 	// DNF句柄
 	HANDLE handle = NULL;
 
+	// 是否窗口置顶
+	bool windowTop = false;
+
 	// 心悦基址区域
 	__int64 C_USER = 0x149415818; // 人物基址
 	__int64 C_USER_POINTER; // 人物指针
@@ -61,7 +64,13 @@ public:
 	int C_PASS_ROOM_OFFSET = 0xF0; // 顺图偏移
 	__int64 C_COORDINATE_PASS_ROOM = 0x142D8C1F0; // 坐标顺图CALL
 	__int64 C_AUTO_PICKUP = 0x143CE113A; // 自动捡物，自动拾取
-	
+	int C_MOVEMENT_ID = 0x5450; // 动作ID
+	int C_PENETRATE_MAP = 0x848; // 地图穿透
+	int C_PENETRATE_BUILDING = 0x84C; // 建筑物穿透
+	int C_MAP_CODE = 0x1CCC; // 地图编码
+	int C_WH_OFFSET = 0x7A0; // 宽高偏移
+	int C_AISLE_OFFSET = 0x7C0; // 通道偏移
+
 	// 7度基址
 	int C_FLOAT_COOL_DOWN2 = 0x2290; // 浮点冷却2
 
@@ -159,6 +168,9 @@ public:
 	// 手动线程控制
 	void manualThreadControl();
 
+	// 自动线程控制
+	void autoThreadControl();
+
 	// 人物指针线程
 	void userPonterUpdate();
 
@@ -191,4 +203,20 @@ public:
 
 	// 关闭图内功能
 	void closeDungeonFunctions();
+
+	// 跑到目标
+	void runToDestination(int x, int y, bool is_room);
+
+	// 走到目标
+	void walkToDestination();
+
+	// 弹起指定按键
+	void keyboardUp(int key);
+
+	bool windowIsTop();
+
+	// 地图和建筑物穿透
+	void penetrate(bool on);
+
+	void autoNextRoom();
 };
