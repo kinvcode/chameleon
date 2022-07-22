@@ -76,6 +76,15 @@ std::vector<byte> DNF::intToBytes(__int64 length) {
 	return c;
 }
 
+std::vector<byte> DNF::intToBytes2(int length) {
+	__int64  adr = (__int64)&length;
+	std::vector<byte>c;
+	for (size_t i = 0; i < 4; i++) {
+		c.push_back(*(byte*)adr++);
+	}
+	return c;
+}
+
 void DNF::handleEvents()
 {
 	CWinThread* pWinThread = AfxGetThread();
@@ -249,6 +258,14 @@ __int64 DNF::decrypt(__int64 address)
 	__int64 data = readLong(address) ^ 0x1F2A025C;
 	data -= 4;
 	return data;
+}
+
+__int64 DNF::decrypt2(__int64 address)
+{
+	__int64 value = readInt(address);
+	value = value ^ 0x1F2A025C & 0xffffffff;
+	value -= 4;
+	return value;
 }
 
 void DNF::memoryAssambly(std::vector<byte>asm_code)
@@ -514,7 +531,7 @@ bool DNF::judgeClearance()
 
 bool DNF::judgeDoorOpen()
 {
-	if (decrypt(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_DOOR_OFFSET) == 0) {
+	if (decrypt2(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_DOOR_OFFSET) == 0) {
 		return true;
 	}
 	else {
@@ -608,12 +625,13 @@ UINT autoThread(LPVOID pParam)
 	int handle_room_times = 0;
 
 	//
-	dnf->penetrate(true);
-
 	while (true)
 	{
 		if (dnf->judgeGameStatus() == 3)
 		{
+			// 地图穿透
+			dnf->penetrate(true);
+
 			// 如果没开门
 			if (dnf->judgeDoorOpen() == false)
 			{
@@ -715,7 +733,7 @@ UINT autoThread(LPVOID pParam)
 						handle_room_times += 1;
 						if (handle_room_times >= 3)
 						{
-							// 自动寻路(); 未完成
+							dnf->autoNextRoom();
 							handle_room_times = 0;
 						}
 					}
@@ -949,7 +967,7 @@ __int64 DNF::passRoomData(int direction)
 	std::vector<byte>asm_code;
 	asm_code = makeByteArray({ 72,129,236,0,1,0,0 });
 	asm_code = asm_code + makeByteArray({ 72,185 }) + intToBytes(room_data);
-	asm_code = asm_code + makeByteArray({ 186 }) + intToBytes(direction);
+	asm_code = asm_code + makeByteArray({ 186 }) + intToBytes2(direction);
 	asm_code = asm_code + makeByteArray({ 72,184 }) + intToBytes(C_COORDINATE_PASS_ROOM);
 	asm_code = asm_code + makeByteArray({ 255,208 });
 	asm_code = asm_code + makeByteArray({ 72,163 }) + intToBytes(empty_address);
@@ -1170,94 +1188,138 @@ void DNF::autoNextRoom()
 	}
 
 	int next_direction = judgeNextRoomDiretion(room_coor, boss_coor);
+	
+	int direct = 0;
 
-	// 过图方向end
-	switch (next_direction)
+	if (next_direction == 1) 
 	{
-	case 1:
-		// 上
-		break;
-	case 2:
-		// 下
-		break;
-	case 3:
-		// 左
-		break;
-	case 4:
-		// 右
-		break;
-	default:
-		break;
+		direct = 2;
+		MainDlg->Log(L"向上奔跑");
 	}
+	if (next_direction == 2)
+	{
+		direct = 3;
+		MainDlg->Log(L"向下奔跑");
+	}
+	if (next_direction == 3)
+	{
+		direct = 0;
+		MainDlg->Log(L"向左奔跑");
+	}
+	if (next_direction == 4)
+	{
+		direct = 1;
+		MainDlg->Log(L"向右奔跑");
+	}
+
+	runToNextRoom(direct);
+
 }
 
 int DNF::judgeNextRoomDiretion(COORDINATE current, COORDINATE boss)
 {
-	// 过图方向begin
 	int x, y;
 
-	mapData(current, boss);
+	DUNGEONMAP map_data = mapData();
+	if (map_data.fatigue < 1) {
+		return 0;
+	}
+	x = map_data.way[0].x - map_data.way[1].x;
+	y = map_data.way[0].y - map_data.way[1].y;
+
+
+	if (x == 0)
+	{
+		if (y == 1)
+		{
+			return 1;
+		}
+		else
+		{
+			return 2;
+		}
+	}
+	else if (y == 0)
+	{
+		if (x == 1)
+		{
+			return 3;
+		}
+		else
+		{
+			return 4;
+		}
+	}
 
 	return 0;
 }
 
-DUNGEONMAP DNF::mapData(COORDINATE current, COORDINATE boss)
+DUNGEONMAP DNF::mapData()
 {
 	DUNGEONMAP map_data;
-	// 地图数据begin
+
 	__int64 room_data = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
-	__int64 room_index = decrypt(room_data + C_MAP_CODE);
+	__int64 room_index = decrypt2(room_data + C_MAP_CODE);
 
 	map_data.width = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 0);
 	map_data.height = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 4);
 	map_data.tmp = readLong(readLong(room_data + C_AISLE_OFFSET) + 32 * room_index + 8);
+
 	map_data.aisle_num = map_data.width * map_data.height;
+
 	for (__int64 i = 0; i < map_data.aisle_num; i++)
 	{
-		map_data.aisle[i] = readInt(map_data.tmp + i * 4 - 4);
+		map_data.aisle.insert(map_data.aisle.begin() + i, readInt(map_data.tmp + i * 4));
 	}
-	map_data.begin.x = current.x + 1;
-	map_data.begin.y = current.y + 1;
-	map_data.end.x = boss.x + 1;
-	map_data.end.y = boss.y + 1;
+
+	map_data.begin.x = readInt(readInt(readInt(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_BEGIN_ROOM_X) + 1;
+	map_data.begin.y = readInt(readInt(readInt(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_BEGIN_ROOM_Y) + 1;
+	map_data.end.x = (int)decrypt2(room_data + C_BOSS_ROOM_X) + 1;
+	map_data.end.y = (int)decrypt2(room_data + C_BOSS_ROOM_Y) + 1;
+
+	if (map_data.begin.x == map_data.end.x && map_data.begin.y == map_data.end.y) {
+		return map_data;
+	}
+
 	map_data.fatigue = getWay(map_data.aisle, map_data.width, map_data.height, map_data.begin, map_data.end, map_data.way);
 	return map_data;
 }
 
-int DNF::getWay(int aisle[100], int width, int height, COORDINATE begin, COORDINATE end, COORDINATE way[100])
+int DNF::getWay(std::vector<int> aisle, int width, int height, COORDINATE begin, COORDINATE end, std::vector<COORDINATE>& way)
 {
-	COORDINATE real_way[1];
+	COORDINATE begin_coor, end_coor;
+	std::vector<std::vector<AISLEDATA>> map_tag, map_array;
+	std::vector<COORDINATE> cross_way;
+
 	if (begin.x == end.x && begin.y == end.y)
 	{
-		// 重定义数组
+		way.clear();
+		way.resize(0);
 		return 0;
 	}
-	AISLEDATA* map_array;
-	createMap(width, height, aisle, &map_array);
-	AISLEDATA* map_tag;
-	showMap(&map_array, width, height, &map_tag);
 
-	COORDINATE begin_coor, end_coor;
-	begin_coor.x = begin.x * 3 - 1;
-	begin_coor.y = begin.y * 3 - 1;
-	end_coor.x = end.x * 3 - 1;
-	end_coor.x = end.y * 3 - 1;
+	createMap(width, height, aisle, map_array);
+	showMap(map_array, width, height, map_tag);
 
+	begin_coor.x = begin.x * 3 - 2;
+	begin_coor.y = begin.y * 3 - 2;
+	end_coor.x = end.x * 3 - 2;
+	end_coor.y = end.y * 3 - 2;
 
-	std::vector<COORDINATE> path_arr(0);
 	// 路径算法
-	pathCalc(map_tag, begin_coor, end_coor, width * 3, height * 3, path_arr);
+	pathCalc(map_tag, begin_coor, end_coor, width * 3, height * 3, cross_way);
 
 	// 整理坐标
-	return 0;
+	return arrangeCoor(cross_way, way);
 }
 
-void DNF::createMap(int width, int height, int aisle[100], AISLEDATA** map)
+void DNF::createMap(int width, int height, std::vector<int> aisle, std::vector<std::vector<AISLEDATA>>& map)
 {
-	map = new AISLEDATA * [width]; //开辟行
-	for (int key = 0; key < width; key++)
+	map.clear();
+	map.resize(width);
+	for (int x = 0; x < width; x++)
 	{
-		map[key] = new AISLEDATA[height]; //开辟列
+		map[x].resize(height);
 	}
 
 	int i = 0;
@@ -1268,27 +1330,29 @@ void DNF::createMap(int width, int height, int aisle[100], AISLEDATA** map)
 		{
 			map[x][y].coor.x = x;
 			map[x][y].coor.y = y;
-			i++;
 			map[x][y].aisle = aisle[i];
-			map[x][y].left = judgeDirection(aisle[i], 1);
-			map[x][y].right = judgeDirection(aisle[i], 2);
-			map[x][y].top = judgeDirection(aisle[i], 3);
-			map[x][y].bottom = judgeDirection(aisle[i], 4);
-			map[x][y].bg = 16777215;
+			map[x][y].left = judgeDirection(aisle[i], 0);
+			map[x][y].right = judgeDirection(aisle[i], 1);
+			map[x][y].top = judgeDirection(aisle[i], 2);
+			map[x][y].bottom = judgeDirection(aisle[i], 3);
+			map[x][y].bg = 0xFFFFFF;
+			i++;
 			if (map[x][y].aisle == 0)
 			{
-				map[x][y].bg = 0;
+				map[x][y].bg = 0x000000;
 			}
 		}
 	}
 }
 
-void DNF::showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag)
+void DNF::showMap(std::vector<std::vector<AISLEDATA>> map, int width, int height, std::vector<std::vector<AISLEDATA>>& tag)
 {
-	tag = new AISLEDATA * [width * 3]; //开辟行
-	for (int key = 0; key < width * 3; key++)
+	tag.clear();
+	tag.resize(width * 3);
+
+	for (int x = 0; x < width * 3; x++)
 	{
-		tag[key] = new AISLEDATA[height * 3]; //开辟列
+		tag[x].resize(height * 3);
 	}
 
 	int x, y;
@@ -1297,22 +1361,22 @@ void DNF::showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag)
 	{
 		for (x = 0; x < width; x++)
 		{
-			tag[x * 3 - 1][y * 3 - 1].bg = 16777215;
+			tag[(x + 1) * 3 - 2][(y + 1) * 3 - 2].bg = 0xFFFFFF;
 			if (map[x][y].left == true)
 			{
-				tag[x * 3 - 2][y * 3 - 1].bg = 16777215;
+				tag[(x + 1) * 3 - 3][(y + 1) * 3 - 2].bg = 0xFFFFFF;
 			}
 			if (map[x][y].right == true)
 			{
-				tag[x * 3 - 0][y * 3 - 1].bg = 16777215;
+				tag[(x + 1) * 3 - 1][(y + 1) * 3 - 2].bg = 0xFFFFFF;
 			}
 			if (map[x][y].top == true)
 			{
-				tag[x * 3 - 1][y * 3 - 2].bg = 16777215;
+				tag[(x + 1) * 3 - 2][(y + 1) * 3 - 3].bg = 0xFFFFFF;
 			}
 			if (map[x][y].bottom == true)
 			{
-				tag[x * 3 - 1][y * 3 - 0].bg = 16777215;
+				tag[(x + 1) * 3 - 2][(y + 1) * 3 - 1].bg = 0xFFFFFF;
 			}
 		}
 	}
@@ -1321,61 +1385,259 @@ void DNF::showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag)
 
 bool DNF::judgeDirection(int aisle, int direction)
 {
-	bool result = false;
-
-	std::vector<byte> set[16];
-	set[0] = makeByteArray({ 0,0,0,0 });
-	set[1] = makeByteArray({ 0,1,0,0 });
-	set[2] = makeByteArray({ 0,0,1,0 });
-	set[3] = makeByteArray({ 0,1,1,0 });
-	set[4] = makeByteArray({ 1,0,0,0 });
-	set[5] = makeByteArray({ 1,1,0,0 });
-	set[6] = makeByteArray({ 1,0,1,0 });
-	set[7] = makeByteArray({ 1,1,1,0 });
-	set[8] = makeByteArray({ 0,0,0,1 });
-	set[9] = makeByteArray({ 0,1,0,1 });
-	set[10] = makeByteArray({ 0,0,1,1 });
-	set[11] = makeByteArray({ 0,1,1,1 });
-	set[12] = makeByteArray({ 1,0,0,1 });
-	set[13] = makeByteArray({ 1,1,0,1 });
-	set[14] = makeByteArray({ 1,0,1,1 });
-	set[15] = makeByteArray({ 1,1,1,1 });
-
-	//byte set[16];
-	//set[0] = 0;
-	//set[1] = 4;
-	//set[2] = 2;
-	//set[3] = 6;
-	//set[4] = 8;
-	//set[5] = 12;
-	//set[6] = 10;
-	//set[7] = 14;
-	//set[8] = 1;
-	//set[9] = 5;
-	//set[10] = 3;
-	//set[11] = 7;
-	//set[12] = 9;
-	//set[13] = 13;
-	//set[14] = 11;
-	//set[15] = 15;
-
-
+	unsigned char direction_arr[4];
+	unsigned char direction_set[16][4] =
+	{
+		{ 0, 0, 0, 0 },
+		{ 0, 1, 0, 0 },
+		{ 0, 0, 1, 0 },
+		{ 0, 1, 1, 0 },
+		{ 1, 0, 0, 0 },
+		{ 1, 1, 0, 0 },
+		{ 1, 0, 1, 0 },
+		{ 1, 1, 1, 0 },
+		{ 0, 0, 0, 1 },
+		{ 0, 1, 0, 1 },
+		{ 0, 0, 1, 1 },
+		{ 0, 1, 1, 1 },
+		{ 1, 0, 0, 1 },
+		{ 1, 1, 0, 1 },
+		{ 1, 0, 1, 1 },
+		{ 1, 1, 1, 1 }
+	};
 	std::vector<byte> arr;
 	if (aisle >= 0 && aisle <= 15)
 	{
-		arr = set[aisle + 1];
+		for (int i = 0; i < 4; i++)
+		{
+			direction_arr[i] = direction_set[aisle][i];
+		}
 	}
 	else {
-		arr = { 0,0,0,0 };
+		for (int i = 0; i < 4; i++)
+		{
+			direction_arr[i] = 0;
+		}
 	}
-	if (arr[direction] == 1)
-	{
-		result = true;
+	if (direction_arr[direction] == 1) {
+		return true;
 	}
-	return result;
+	return false;
 }
 
-void DNF::pathCalc(AISLEDATA*& map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE> path_arr)
+void DNF::pathCalc(std::vector<std::vector<AISLEDATA>> map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE>& cross_way)
 {
+	bool exists_open_list, exists_close_list;
+	COORDINATE not_check_coor;
+	MAPNODE not_check_node, tmp_node;
+	std::vector<MAPNODE> open_list, close_list;
+	int min_number = 0;
+	DWORD min_f;
+	int estimate_g;
+	int x, y;
 
+	tmp_node.current.x = begin.x;
+	tmp_node.current.y = begin.y;
+	map_tag[begin.x][begin.y].bg = 0x00FF00;
+	map_tag[end.x][end.y].bg = 0x0000FF;
+	open_list.insert(open_list.begin(), tmp_node);
+
+	do
+	{
+		min_f = 0;
+		for (y = 0; y < open_list.size(); y++)
+		{
+			if (min_f == 0)
+			{
+				min_f = open_list[0].f;
+				min_number = y;
+			}
+			if (open_list[y].f < min_f)
+			{
+				min_f = open_list[y].f;
+				min_number = y;
+			}
+		}
+		tmp_node = open_list[min_number];
+		open_list.erase(open_list.begin() + min_number);
+		close_list.insert(close_list.begin(), tmp_node);
+
+		if (tmp_node.current.x != begin.x || tmp_node.current.y != begin.y)
+		{
+			if (tmp_node.current.x != end.x || tmp_node.current.y != end.y)
+			{
+				map_tag[tmp_node.current.x][tmp_node.current.y].bg = 0x0080FF;
+			}
+		}
+
+		for (y = 0; y < close_list.size(); y++)
+		{
+			if (close_list[y].current.x == end.x && close_list[y].current.y == end.y)
+			{
+				not_check_node = close_list[y];
+				do {
+					for (unsigned int x = 0; x < close_list.size(); x++)
+					{
+						if (close_list[x].current.x == not_check_node.final.x && close_list[x].current.y == not_check_node.final.y)
+						{
+							not_check_node = close_list[x];
+							break;
+						}
+					}
+					if (not_check_node.current.x != begin.x || not_check_node.current.y != begin.y)
+					{
+						map_tag[not_check_node.current.x][not_check_node.current.y].bg = 0x00D8D8;
+						cross_way.insert(cross_way.begin(), not_check_node.current);
+					}
+
+				} while (not_check_node.current.x != begin.x || not_check_node.current.y != begin.y);
+				cross_way.insert(cross_way.begin(), begin);
+				cross_way.insert(cross_way.end(), end);
+			}
+		}
+
+		for (y = 0; y < 4; y++)
+		{
+			if (y == 0)
+			{
+				not_check_coor.x = tmp_node.current.x;
+				not_check_coor.y = tmp_node.current.y - 1;
+			}
+			else if (y == 1) {
+				not_check_coor.x = tmp_node.current.x - 1;
+				not_check_coor.y = tmp_node.current.y;
+			}
+			else if (y == 2) {
+				not_check_coor.x = tmp_node.current.x + 1;
+				not_check_coor.y = tmp_node.current.y;
+			}
+			else {
+				not_check_coor.x = tmp_node.current.x;
+				not_check_coor.y = tmp_node.current.y + 1;
+			}
+
+			if (not_check_coor.x < 0 || not_check_coor.x>(width - 1) || not_check_coor.y<0 || not_check_coor.y>(height - 1))
+			{
+				continue;
+			}
+			if (map_tag[not_check_coor.x][not_check_coor.y].bg == 0x000000)
+			{
+				continue;
+			}
+			exists_close_list = false;
+
+			for (x = 0; x < close_list.size(); x++)
+			{
+				if (close_list[x].current.x == not_check_coor.x && close_list[x].current.y == not_check_coor.y)
+				{
+					exists_close_list = true;
+					break;
+				}
+			}
+			if (exists_close_list) {
+				continue;
+			}
+			exists_open_list = false;
+
+			for (x = 0; x < open_list.size(); x++)
+			{
+				if (open_list[x].current.x == not_check_coor.x && open_list[x].current.y == not_check_coor.y)
+				{
+					if (not_check_coor.x != tmp_node.current.x || not_check_coor.y != tmp_node.current.y)
+					{
+						estimate_g = 14;
+					}
+					else
+					{
+						estimate_g = 10;
+					}
+					if (tmp_node.g + estimate_g < open_list[x].g) {
+						open_list[x].final = tmp_node.current;
+					}
+					exists_open_list = true;
+					break;
+				}
+			}
+
+			if (exists_open_list == false)
+			{
+				if (not_check_coor.x == tmp_node.current.x || not_check_coor.y == tmp_node.current.y) {
+					estimate_g = 10;
+				}
+				else {
+					estimate_g = 14;
+				}
+				not_check_node.g = tmp_node.g + estimate_g;
+				not_check_node.h = abs(end.x - not_check_coor.x) * 10 + abs(end.y - not_check_coor.y) * 10;
+				not_check_node.f = not_check_node.g + not_check_node.h;
+				not_check_node.current = not_check_coor;
+				not_check_node.final = tmp_node.current;
+				open_list.insert(open_list.begin(), not_check_node);
+			}
+		}
+	} while (open_list.size() != 0);
+}
+
+int DNF::arrangeCoor(std::vector<COORDINATE>imitation, std::vector<COORDINATE>& real_cross)
+{
+	int x, y, k = 0;
+	COORDINATE tmp_coor;
+	for (int i = 0; i < imitation.size(); i++)
+	{
+		x = (imitation[i].x + 2) % 3;
+		y = (imitation[i].y + 2) % 3;
+		if (x == 0 && y == 0)
+		{
+			tmp_coor.x = (imitation[i].x + 2) / 3 - 1;
+			tmp_coor.y = (imitation[i].y + 2) / 3 - 1;
+			real_cross.insert(real_cross.begin() + k, tmp_coor);
+			k++;
+		}
+	}
+	return(k);
+}
+
+void DNF::runToNextRoom(int direction)
+{
+	__int64 pass_room_data = passRoomData(direction);
+	__int64 coor_struct = pass_room_data;
+
+	int begin_x, begin_y, end_x, end_y, calc_x, calc_y;
+	begin_x = readInt(coor_struct + 0);
+	begin_y = readInt(coor_struct + 4);
+	end_x = readInt(coor_struct + 8);
+	end_y = readInt(coor_struct + 12);
+
+	if (direction == 0)
+	{
+		calc_x = begin_x + end_x + 20; // 火魂向左顺图
+		calc_y = begin_y + end_y / 2;
+	}
+	if (direction == 1)
+	{
+		calc_x = begin_x - 20; // 火魂向右顺图
+		calc_y = begin_y + end_y / 2;
+	}
+	if (direction == 2)
+	{
+		calc_x = begin_x + end_x / 2; // 火魂向上顺图
+		calc_y = begin_y + end_y + 20;
+
+	}
+	if (direction == 3)
+	{
+		calc_x = begin_x + end_x / 2; // 火魂向下顺图
+		calc_y = begin_y - 20;
+	}
+
+	if (calc_x < 0 || calc_y < 0)
+	{
+		return;
+	}
+
+	runToDestination(calc_x, calc_y, true);
+	programDelay(100);
+	handleEvents();
+	runToDestination(begin_x + end_x / 2, begin_y, true);
+	handleEvents();
 }

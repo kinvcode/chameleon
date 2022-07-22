@@ -190,7 +190,7 @@ void CchameleonDlg::OnBnClickedButton1()
 		// 启动手动线程
 		//_DNF->manualThreadControl();
 		// 启动自动线程
-		//_DNF->autoThreadControl();
+		_DNF->autoThreadControl();
 	}
 }
 

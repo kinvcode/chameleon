@@ -9,14 +9,14 @@ struct COORDINATE {
 
 struct DUNGEONMAP
 {
-	const char* map_name;
+	char* map_name;
 	int map_number;
-	int aisle[100];
+	std::vector<int> aisle;
 	COORDINATE begin;
 	COORDINATE end;
 	int width;
 	int height;
-	COORDINATE way[100];
+	std::vector<COORDINATE> way;
 	int fatigue;
 	int aisle_num;
 	__int64 tmp;
@@ -31,6 +31,15 @@ struct AISLEDATA
 	bool bottom;
 	int aisle;
 	int bg;
+};
+
+struct MAPNODE
+{
+	DWORD f;
+	DWORD g;
+	DWORD h;
+	COORDINATE current;
+	COORDINATE final;
 };
 
 class DNF
@@ -76,6 +85,8 @@ public:
 	__int64 C_BOSS_ROOM_Y = 0x1CEC; // BOSS房间Y
 	__int64 C_CURRENT_ROOM_X = 0x1BD8; // 当前房间X
 	__int64 C_CURRENT_ROOM_Y = 0x1BDC; // 当前房间Y
+	__int64 C_BEGIN_ROOM_X = 0x178; // 起始坐标X
+	__int64 C_BEGIN_ROOM_Y = 0x17C; // 起始坐标Y
 	int C_MAP_HEAD = 0x148; // 地图开始2
 	int C_MAP_END = 0x150; // 地图结束2
 	int C_HEAD_ADDRESS = 0x148; // 首地址
@@ -112,6 +123,7 @@ public:
 	std::vector<byte> makeEmptyByteArray(int length);
 
 	std::vector<byte> intToBytes(__int64 length);
+	std::vector<byte> intToBytes2(int length);
 
 
 	/**********[ 进 程 函 数 区 域 ]***********/
@@ -145,6 +157,7 @@ public:
 	void encrypt(__int64 address, int value);
 
 	__int64 decrypt(__int64 address);
+	__int64 decrypt2(__int64 address);
 
 	void memoryAssambly(std::vector<byte>asm_code);
 
@@ -251,22 +264,26 @@ public:
 	int judgeNextRoomDiretion(COORDINATE current, COORDINATE boss);
 
 	// 地图数据
-	DUNGEONMAP mapData(COORDINATE current, COORDINATE boss);
+	DUNGEONMAP mapData();
 
 	// 获取走法
-	int getWay(int aisle[100], int width, int height, COORDINATE begin, COORDINATE end, COORDINATE way[100]);
+	int getWay(std::vector<int> aisle, int width, int height, COORDINATE begin, COORDINATE end, std::vector<COORDINATE>& way);
 
 	// 生成地图
-	void createMap(int width, int height, int aisle[100], AISLEDATA** map);
+	void createMap(int width, int height, std::vector<int> aisle, std::vector<std::vector<AISLEDATA>>& map);
 
 	// 显示地图
-	void showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag);
+	void showMap(std::vector<std::vector<AISLEDATA>> map, int width, int height, std::vector<std::vector<AISLEDATA>>& tag);
 
 	// 判断方向
 	bool judgeDirection(int aisle, int direction);
 	
 	// 路径算法
-	void pathCalc(AISLEDATA*& map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE> path_arr);
+	void pathCalc(std::vector<std::vector<AISLEDATA>> map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE>& cross_way);
 
 	// 整理坐标
+	int arrangeCoor(std::vector<COORDINATE>imitation, std::vector<COORDINATE>& real_cross);
+
+	// 奔跑进入下一个房间
+	void runToNextRoom(int direction);
 };
