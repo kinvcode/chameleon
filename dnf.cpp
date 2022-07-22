@@ -417,7 +417,7 @@ void DNF::skillCall(__int64 pointer, int code, __int64 damage, int x, int y, int
 COORDINATE DNF::judgeBossRoom()
 {
 	COORDINATE coor;
-	__int64 roomData = readLong(readLong(readLong(readLong(C_ROOM_NUMBER)) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	__int64 roomData = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
 	coor.x = (int)decrypt(roomData + C_BOSS_ROOM_X);
 	coor.y = (int)decrypt(roomData + C_BOSS_ROOM_Y);
 	return coor;
@@ -426,9 +426,10 @@ COORDINATE DNF::judgeBossRoom()
 COORDINATE DNF::judgeCurrentRoom()
 {
 	COORDINATE coor;
-	__int64 roomData = readLong(readLong(readLong(readLong(C_ROOM_NUMBER)) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
-	coor.x = (int)decrypt(roomData + C_CURRENT_ROOM_X);
-	coor.y = (int)decrypt(roomData + C_CURRENT_ROOM_Y);
+
+	__int64 roomData = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
+	coor.x = readInt(roomData + C_CURRENT_ROOM_X);
+	coor.y = readInt(roomData + C_CURRENT_ROOM_Y);
 	return coor;
 }
 
@@ -640,8 +641,6 @@ UINT autoThread(LPVOID pParam)
 						// 暂时不处理
 					}
 
-
-
 					// 需要清理的怪物或建筑
 					if (monster_type == 529 || monster_type == 273) {
 						if (monster_address != dnf->readLong(dnf->C_USER)) {
@@ -658,9 +657,10 @@ UINT autoThread(LPVOID pParam)
 								MainDlg->Log(name2);
 								// 到达目标后立即进行攻击（无论目标是否已经移动）
 								dnf->runToDestination(monster_coor.x, monster_coor.y, false);
-								// 攻击
+
+								// 攻击逻辑（暂时使用普通攻击）
 								M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
-								
+
 								break;
 							}
 						}
@@ -905,7 +905,7 @@ void DNF::clearanceEvent()
 
 void DNF::skillCoolDown(float num)
 {
-	encrypt(readLong(C_USER) + C_FLOAT_COOL_DOWN2, num);
+	encrypt(readLong(C_USER) + C_FLOAT_COOL_DOWN2, (int)num);
 }
 
 __int64 DNF::getUserPointer(__int64 emptyAddress)
@@ -1169,42 +1169,213 @@ void DNF::autoNextRoom()
 		return;
 	}
 
+	int next_direction = judgeNextRoomDiretion(room_coor, boss_coor);
+
+	// 过图方向end
+	switch (next_direction)
+	{
+	case 1:
+		// 上
+		break;
+	case 2:
+		// 下
+		break;
+	case 3:
+		// 左
+		break;
+	case 4:
+		// 右
+		break;
+	default:
+		break;
+	}
+}
+
+int DNF::judgeNextRoomDiretion(COORDINATE current, COORDINATE boss)
+{
 	// 过图方向begin
 	int x, y;
 
+	mapData(current, boss);
+
+	return 0;
+}
+
+DUNGEONMAP DNF::mapData(COORDINATE current, COORDINATE boss)
+{
+	DUNGEONMAP map_data;
 	// 地图数据begin
 	__int64 room_data = readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET);
-	int room_index = decrypt(room_data + C_MAP_CODE);
-	int room_width = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 0);
-	int room_height = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 4);
-	long tmp_value = readLong(readLong(room_data + C_AISLE_OFFSET) + 32 * room_index + 8);
-	int aisle_num = room_width * room_height;
+	__int64 room_index = decrypt(room_data + C_MAP_CODE);
 
-
-	// 地图数据end
-
-	//x = 地图数据.地图走法[1].x - 地图数据.地图走法[2].x;
-	//y = 地图数据.地图走法[1].y - 地图数据.地图走法[2].y;
-
-	int direction = 0;
-	if (x == 0)
+	map_data.width = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 0);
+	map_data.height = readInt(readLong(room_data + C_WH_OFFSET) + room_index * 8 + 4);
+	map_data.tmp = readLong(readLong(room_data + C_AISLE_OFFSET) + 32 * room_index + 8);
+	map_data.aisle_num = map_data.width * map_data.height;
+	for (__int64 i = 0; i < map_data.aisle_num; i++)
 	{
-		if (y == 1) {
-			direction = 1;
-		}
-		else {
-			direction = 2;
+		map_data.aisle[i] = readInt(map_data.tmp + i * 4 - 4);
+	}
+	map_data.begin.x = current.x + 1;
+	map_data.begin.y = current.y + 1;
+	map_data.end.x = boss.x + 1;
+	map_data.end.y = boss.y + 1;
+	map_data.fatigue = getWay(map_data.aisle, map_data.width, map_data.height, map_data.begin, map_data.end, map_data.way);
+	return map_data;
+}
+
+int DNF::getWay(int aisle[100], int width, int height, COORDINATE begin, COORDINATE end, COORDINATE way[100])
+{
+	COORDINATE real_way[1];
+	if (begin.x == end.x && begin.y == end.y)
+	{
+		// 重定义数组
+		return 0;
+	}
+	AISLEDATA* map_array;
+	createMap(width, height, aisle, &map_array);
+	AISLEDATA* map_tag;
+	showMap(&map_array, width, height, &map_tag);
+
+	COORDINATE begin_coor, end_coor;
+	begin_coor.x = begin.x * 3 - 1;
+	begin_coor.y = begin.y * 3 - 1;
+	end_coor.x = end.x * 3 - 1;
+	end_coor.x = end.y * 3 - 1;
+
+
+	std::vector<COORDINATE> path_arr(0);
+	// 路径算法
+	pathCalc(map_tag, begin_coor, end_coor, width * 3, height * 3, path_arr);
+
+	// 整理坐标
+	return 0;
+}
+
+void DNF::createMap(int width, int height, int aisle[100], AISLEDATA** map)
+{
+	map = new AISLEDATA * [width]; //开辟行
+	for (int key = 0; key < width; key++)
+	{
+		map[key] = new AISLEDATA[height]; //开辟列
+	}
+
+	int i = 0;
+	int x, y;
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			map[x][y].coor.x = x;
+			map[x][y].coor.y = y;
+			i++;
+			map[x][y].aisle = aisle[i];
+			map[x][y].left = judgeDirection(aisle[i], 1);
+			map[x][y].right = judgeDirection(aisle[i], 2);
+			map[x][y].top = judgeDirection(aisle[i], 3);
+			map[x][y].bottom = judgeDirection(aisle[i], 4);
+			map[x][y].bg = 16777215;
+			if (map[x][y].aisle == 0)
+			{
+				map[x][y].bg = 0;
+			}
 		}
 	}
-	if (y == 0) {
-		if (x == 1) {
-			direction = 3;
-		}
-		else {
-			direction = 4;
+}
+
+void DNF::showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag)
+{
+	tag = new AISLEDATA * [width * 3]; //开辟行
+	for (int key = 0; key < width * 3; key++)
+	{
+		tag[key] = new AISLEDATA[height * 3]; //开辟列
+	}
+
+	int x, y;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			tag[x * 3 - 1][y * 3 - 1].bg = 16777215;
+			if (map[x][y].left == true)
+			{
+				tag[x * 3 - 2][y * 3 - 1].bg = 16777215;
+			}
+			if (map[x][y].right == true)
+			{
+				tag[x * 3 - 0][y * 3 - 1].bg = 16777215;
+			}
+			if (map[x][y].top == true)
+			{
+				tag[x * 3 - 1][y * 3 - 2].bg = 16777215;
+			}
+			if (map[x][y].bottom == true)
+			{
+				tag[x * 3 - 1][y * 3 - 0].bg = 16777215;
+			}
 		}
 	}
 
-	// 过图方向end
+}
+
+bool DNF::judgeDirection(int aisle, int direction)
+{
+	bool result = false;
+
+	std::vector<byte> set[16];
+	set[0] = makeByteArray({ 0,0,0,0 });
+	set[1] = makeByteArray({ 0,1,0,0 });
+	set[2] = makeByteArray({ 0,0,1,0 });
+	set[3] = makeByteArray({ 0,1,1,0 });
+	set[4] = makeByteArray({ 1,0,0,0 });
+	set[5] = makeByteArray({ 1,1,0,0 });
+	set[6] = makeByteArray({ 1,0,1,0 });
+	set[7] = makeByteArray({ 1,1,1,0 });
+	set[8] = makeByteArray({ 0,0,0,1 });
+	set[9] = makeByteArray({ 0,1,0,1 });
+	set[10] = makeByteArray({ 0,0,1,1 });
+	set[11] = makeByteArray({ 0,1,1,1 });
+	set[12] = makeByteArray({ 1,0,0,1 });
+	set[13] = makeByteArray({ 1,1,0,1 });
+	set[14] = makeByteArray({ 1,0,1,1 });
+	set[15] = makeByteArray({ 1,1,1,1 });
+
+	//byte set[16];
+	//set[0] = 0;
+	//set[1] = 4;
+	//set[2] = 2;
+	//set[3] = 6;
+	//set[4] = 8;
+	//set[5] = 12;
+	//set[6] = 10;
+	//set[7] = 14;
+	//set[8] = 1;
+	//set[9] = 5;
+	//set[10] = 3;
+	//set[11] = 7;
+	//set[12] = 9;
+	//set[13] = 13;
+	//set[14] = 11;
+	//set[15] = 15;
+
+
+	std::vector<byte> arr;
+	if (aisle >= 0 && aisle <= 15)
+	{
+		arr = set[aisle + 1];
+	}
+	else {
+		arr = { 0,0,0,0 };
+	}
+	if (arr[direction] == 1)
+	{
+		result = true;
+	}
+	return result;
+}
+
+void DNF::pathCalc(AISLEDATA*& map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE> path_arr)
+{
 
 }

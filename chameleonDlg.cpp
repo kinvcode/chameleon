@@ -189,7 +189,8 @@ void CchameleonDlg::OnBnClickedButton1()
 		_DNF->userPonterUpdate();
 		// 启动手动线程
 		//_DNF->manualThreadControl();
-		_DNF->autoThreadControl();
+		// 启动自动线程
+		//_DNF->autoThreadControl();
 	}
 }
 
@@ -359,8 +360,7 @@ void CchameleonDlg::OnBnClickedButton7()
 
 	//M_ReleaseAllKey(msdk_handle);
 
-	Sleep(1000);
-	_DNF->runToDestination(600, 150,false);
+	_DNF->autoNextRoom();
 }
 
 

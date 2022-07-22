@@ -7,6 +7,32 @@ struct COORDINATE {
 	int z;
 };
 
+struct DUNGEONMAP
+{
+	const char* map_name;
+	int map_number;
+	int aisle[100];
+	COORDINATE begin;
+	COORDINATE end;
+	int width;
+	int height;
+	COORDINATE way[100];
+	int fatigue;
+	int aisle_num;
+	__int64 tmp;
+};
+
+struct AISLEDATA
+{
+	COORDINATE coor;
+	bool left;
+	bool right;
+	bool top;
+	bool bottom;
+	int aisle;
+	int bg;
+};
+
 class DNF
 {
 public:
@@ -22,36 +48,36 @@ public:
 	// 是否窗口置顶
 	bool windowTop = false;
 
-	// 心悦基址区域
-	__int64 C_USER = 0x149415818; // 人物基址
+	// 7度基址区域
+	__int64 C_USER = 0x14974D7B0; // 人物基址
 	__int64 C_USER_POINTER; // 人物指针
-	__int64 C_USER_CALL = 0x143DD4DA0; // 人物CALL
-	int C_NAME_OFFSET = 0x840; // 名称基址
+	__int64 C_USER_CALL = 0x143DD4CA0; // 人物CALL
+	int C_NAME_OFFSET = 0x840; // 名称偏移
 	int C_SHOE_OFFSET = 0x5360; // 鞋子偏移
 	int C_ATTACK_SPEED = 0xC88; // 攻击速度
 	int C_MOVE_SPEED = 0xC80; // 移动速度
 	int C_CASTING_SPEED = 0xC90; // 释放速度
-	__int64 C_EMPTY_ADDRESS = 0x13FCCA9B0; // 空白地址
+	__int64 C_EMPTY_ADDRESS = 0x13FCA04C0; // 全局空白
 	__int64 C_ASM_CALL = 0x13FDC0000; // 汇编CALL
-	__int64 C_SUMMON_FIGURE = 0x1439EE850; // 召唤人偶CALL
-	__int64 C_SUMMON_MONSTER = 0x1439DFAF0; // 召唤怪物CALL
-	__int64 C_HIDDEN_CALL = 0x144D258B0; // 透明CALL
-	__int64 C_SKILL_CALL = 0x14391B6A0; // 技能CALL
-	__int64 C_GAME_STATUS = 0x1491795E0; // 游戏状态
-	__int64 C_ROOM_NUMBER = 0x14949BC98; // 房间编号
+	__int64 C_SUMMON_FIGURE = 0x1439EE750; // 召唤人偶CALL
+	__int64 C_SUMMON_MONSTER = 0x1439DF9F0; // 召唤怪物CALL
+	__int64 C_HIDDEN_CALL = 0x144D259C0; // 透明CALL
+	__int64 C_SKILL_CALL = 0x14391B5A0; // 技能CALL
+	__int64 C_GAME_STATUS = 0x14917D5E0; // 游戏状态
+	__int64 C_ROOM_NUMBER = 0x14949FC98; // 房间编号
 	int C_TIME_ADDRESS = 0x20A050; // 时间基址
 	int C_DOOR_TYPE_OFFSET = 0x170; // 门型偏移
 	int C_BONFIRE_JUDGE = 0x1DA8; // 篝火判断
-	__int64 C_SCORE_ADDRESS = 0x14949A838; // 评分基址
-	int C_CE_SCORE = 0xC98; // CE评分
-	int C_DOOR_OFFSET = 0x1E4; // 开门偏移（是否开门）
-	int C_MAP_OFFSET = 0x180; // 地图偏移_1
-	__int64 C_BOSS_ROOM_X = 0x1CE4; // BOSS房间_X
-	__int64 C_BOSS_ROOM_Y = 0x1CEC; // BOSS房间_Y
-	__int64 C_CURRENT_ROOM_X = 0x1BD8; // 当前房间_X
-	__int64 C_CURRENT_ROOM_Y = 0x1BDC; // 当前房间_Y
-	int C_MAP_HEAD = 0x148; // 地图开始
-	int C_MAP_END = 0x150; // 地图结束
+	__int64 C_SCORE_ADDRESS = 0x14949E838; // 评分基址
+	int C_CE_SCORE = 0xC98; // C_E_评分
+	int C_DOOR_OFFSET = 0x1E4; // 是否开门
+	int C_MAP_OFFSET = 0x180; // 地图偏移
+	__int64 C_BOSS_ROOM_X = 0x1CE4; // BOSS房间X
+	__int64 C_BOSS_ROOM_Y = 0x1CEC; // BOSS房间Y
+	__int64 C_CURRENT_ROOM_X = 0x1BD8; // 当前房间X
+	__int64 C_CURRENT_ROOM_Y = 0x1BDC; // 当前房间Y
+	int C_MAP_HEAD = 0x148; // 地图开始2
+	int C_MAP_END = 0x150; // 地图结束2
 	int C_HEAD_ADDRESS = 0x148; // 首地址
 	int C_END_ADDRESS = 0x150; // 尾地址
 	int C_TYPE_OFFSET = 0x154; // 类型偏移
@@ -60,19 +86,18 @@ public:
 	int C_MONSTER_BLOOD = 0x6040; // 怪物血量
 	int C_READ_COORDINATE = 0x338; // 读取坐标
 	int C_OBJECT_COORDINATE = 0x168; // 对象坐标
-	__int64 C_GLOBAL_ADDRESS = 0x143C96D4E; // 全局基址
+	__int64 C_GLOBAL_ADDRESS = 0x143C96C4E; // 全局基址
 	int C_PASS_ROOM_OFFSET = 0xF0; // 顺图偏移
-	__int64 C_COORDINATE_PASS_ROOM = 0x142D8C1F0; // 坐标顺图CALL
-	__int64 C_AUTO_PICKUP = 0x143CE113A; // 自动捡物，自动拾取
+	__int64 C_COORDINATE_PASS_ROOM = 0x142D8C0F0; // 坐标顺图CALL
+	__int64 C_AUTO_PICKUP = 0x143CE103A; // 自动捡物
 	int C_MOVEMENT_ID = 0x5450; // 动作ID
 	int C_PENETRATE_MAP = 0x848; // 地图穿透
-	int C_PENETRATE_BUILDING = 0x84C; // 建筑物穿透
-	int C_MAP_CODE = 0x1CCC; // 地图编码
+	int C_PENETRATE_BUILDING = 0x84C; // 建筑穿透
 	int C_WH_OFFSET = 0x7A0; // 宽高偏移
-	int C_AISLE_OFFSET = 0x7C0; // 通道偏移
-
-	// 7度基址
+	int C_AISLE_OFFSET = 0x7C0; // 数组偏移|通道偏移
 	int C_FLOAT_COOL_DOWN2 = 0x2290; // 浮点冷却2
+	int C_MAP_CODE = 0x1CCC; // 索引偏移|地图编码(心悦)
+
 
 	// 组包数据
 
@@ -213,10 +238,35 @@ public:
 	// 弹起指定按键
 	void keyboardUp(int key);
 
+	// 游戏窗口是否置顶
 	bool windowIsTop();
 
 	// 地图和建筑物穿透
 	void penetrate(bool on);
 
+	// 自动下个房间
 	void autoNextRoom();
+
+	// 判断下个房间的方向
+	int judgeNextRoomDiretion(COORDINATE current, COORDINATE boss);
+
+	// 地图数据
+	DUNGEONMAP mapData(COORDINATE current, COORDINATE boss);
+
+	// 获取走法
+	int getWay(int aisle[100], int width, int height, COORDINATE begin, COORDINATE end, COORDINATE way[100]);
+
+	// 生成地图
+	void createMap(int width, int height, int aisle[100], AISLEDATA** map);
+
+	// 显示地图
+	void showMap(AISLEDATA** map, int width, int height, AISLEDATA** tag);
+
+	// 判断方向
+	bool judgeDirection(int aisle, int direction);
+	
+	// 路径算法
+	void pathCalc(AISLEDATA*& map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE> path_arr);
+
+	// 整理坐标
 };
