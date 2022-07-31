@@ -10,6 +10,7 @@
 #include "loadDriver.h"
 #include "msdk.h"
 #include "UsbHidKeyCode.h"
+#include "constant.h"
 
 
 #ifdef _DEBUG
@@ -93,7 +94,7 @@ BOOL CchameleonDlg::OnInitDialog()
 	_casting_speed.SetWindowText(L"2000");
 	_move_speed.SetWindowText(L"1000");
 
-	_cool_down.SetWindowText(L"80");
+	_cool_down.SetWindowText(L"70");
 
 	_damage_value.SetWindowText(L"196688");
 
@@ -188,9 +189,9 @@ void CchameleonDlg::OnBnClickedButton1()
 		// 启动读取人物基址线程
 		_DNF->userPonterUpdate();
 		// 启动手动线程
-		//_DNF->manualThreadControl();
+		_DNF->manualThreadControl();
 		// 启动自动线程
-		_DNF->autoThreadControl();
+		//_DNF->autoThreadControl();
 	}
 }
 
@@ -324,10 +325,10 @@ void CchameleonDlg::OnEnChangeEdit9()
 
 	int num = _ttoi(number);
 
-	if (num < 0 || num > 80)
+	if (num < 0 || num > 70)
 	{
 		_cool_down.SetWindowText(L"50");
-		Log(L"技能缩减范围：1~80");
+		Log(L"技能缩减范围：1~70");
 	}
 
 }
@@ -338,7 +339,7 @@ void CchameleonDlg::OnBnClickedButton6()
 	CString number;
 	_cool_down.GetWindowText(number);
 
-	_DNF->encrypt(_DNF->readLong(_DNF->C_USER) + _DNF->C_FLOAT_COOL_DOWN2, _ttoi(number));
+	_DNF->encrypt(_DNF->readLong(_DNF->C_USER) + C_FLOAT_COOL_DOWN2, _ttoi(number));
 	Log(L"技能冷却已开启");
 }
 
@@ -360,7 +361,7 @@ void CchameleonDlg::OnBnClickedButton7()
 
 	//M_ReleaseAllKey(msdk_handle);
 
-	_DNF->autoNextRoom();
+	//_DNF->autoNextRoom();
 }
 
 

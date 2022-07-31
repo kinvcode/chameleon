@@ -190,6 +190,7 @@
     <ClInclude Include="..\ext\001\chameleon\usbhidkeycode.h" />
     <ClInclude Include="chameleon.h" />
     <ClInclude Include="chameleonDlg.h" />
+    <ClInclude Include="constant.h" />
     <ClInclude Include="dnf.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="msdk.h" />

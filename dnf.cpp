@@ -4,12 +4,16 @@
 #include "overloading.h"
 #include "msdk.h"
 #include "UsbHidKeyCode.h"
+#include "constant.h"
 
 extern CchameleonDlg* MainDlg;
 
 DNF::DNF(DWORD PID)
 {
 	this->PID = PID;
+
+	this->C_USER = C_USER_ADDRESS;
+	this->C_USER_POINTER = 0;
 }
 
 DNF::~DNF()
@@ -457,8 +461,8 @@ bool DNF::judgeHaveMonster()
 		return false;
 	}
 
-	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
-	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
 
 	int monster_quantity = (int)(end_address - head_address) / 16;
 	for (__int64 i = 1; i <= monster_quantity; i++)
@@ -489,8 +493,8 @@ bool DNF::judgeHaveItem()
 		return false;
 	}
 
-	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
-	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
 
 	int monster_quantity = (int)(end_address - head_address) / 16;
 	for (__int64 i = 1; i <= monster_quantity; i++)
@@ -568,7 +572,7 @@ UINT manualThread(LPVOID pParam)
 		}
 
 		// 如果在图内
-		if (dnf->readInt(dnf->C_GAME_STATUS) == 3)
+		if (dnf->readInt(C_GAME_STATUS) == 3)
 		{
 			// 开启拾取
 			if (MainDlg->_switch_gather_items.GetCheck() == BST_CHECKED)
@@ -596,7 +600,7 @@ UINT manualThread(LPVOID pParam)
 		}
 
 		// 如果不在图内
-		if (dnf->readInt(dnf->C_GAME_STATUS) <= 2)
+		if (dnf->readInt(C_GAME_STATUS) <= 2)
 		{
 			first_room = false;
 			clearance_judge = false;
@@ -641,18 +645,18 @@ UINT autoThread(LPVOID pParam)
 				//每图循环(); 未完成:跟随怪物，输出伤害 // 打怪逻辑处理
 
 				// 获取第一个怪物坐标
-				__int64 head_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + dnf->C_MAP_OFFSET) + 16) + dnf->C_HEAD_ADDRESS);
-				__int64 end_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + dnf->C_MAP_OFFSET) + 16) + dnf->C_END_ADDRESS);
+				__int64 head_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+				__int64 end_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
 
 				int monster_quantity = (int)(end_address - head_address) / 24;
 
 				for (int i = 1; i <= monster_quantity; i++)
 				{
 					__int64 monster_address = dnf->readLong(dnf->readLong(head_address + (__int64)i * 24) + 16) - 32;
-					int monster_type = dnf->readInt(monster_address + dnf->C_TYPE_OFFSET);
-					int monster_camp = dnf->readInt(monster_address + dnf->C_CAMP_OFFSET);
-					int monster_code = dnf->readInt(monster_address + dnf->C_CODE_OFFSET);
-					int monster_blood = dnf->readInt(monster_address + dnf->C_MONSTER_BLOOD);
+					int monster_type = dnf->readInt(monster_address + C_TYPE_OFFSET);
+					int monster_camp = dnf->readInt(monster_address + C_CAMP_OFFSET);
+					int monster_code = dnf->readInt(monster_address + C_CODE_OFFSET);
+					int monster_blood = dnf->readInt(monster_address + C_MONSTER_BLOOD);
 
 					// 处理特殊对象：格蓝迪柱子
 					if (monster_code == 109051366 || monster_code == 109051365 || monster_code == 109051364) {
@@ -670,7 +674,7 @@ UINT autoThread(LPVOID pParam)
 								// 输出目标名称
 								CString name2;
 								CStringA name;
-								name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + dnf->C_NAME_OFFSET), 50));
+								name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + C_NAME_OFFSET), 50));
 								name2 = name;
 								MainDlg->Log(name2);
 								// 到达目标后立即进行攻击（无论目标是否已经移动）
@@ -773,18 +777,20 @@ UINT userPointerThread(LPVOID pParam)
 
 		if (dnf->judgeGameStatus() >= 1 && statusChange == false)
 		{
-			emptyAddress = dnf->C_EMPTY_ADDRESS + 4000;
+			emptyAddress = C_EMPTY_ADDRESS + 4000;
 			dnf->C_USER_POINTER = dnf->getUserPointer(emptyAddress);
 			dnf->C_USER = emptyAddress;
 			if (dnf->C_USER_POINTER == 0)
 			{
+				// 重新读取人物指针
 				continue;
 			}
 			statusChange = true;
-
+			// 人物指针已改变
 		}
 		else if (dnf->judgeGameStatus() == 0)
 		{
+			// 选择角色
 			statusChange = false;
 		}
 		dnf->programDelay(300);
@@ -820,8 +826,8 @@ void DNF::gatherItems()
 		return;
 	}
 
-	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_HEAD_ADDRESS);
-	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_END_ADDRESS);
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
 	int item_quantity = 0;
 	COORDINATE monster_coordinate;
 	COORDINATE user_coordinate;
