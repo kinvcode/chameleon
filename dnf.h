@@ -154,6 +154,9 @@ public:
 	// 判断当前是否是BOSS房间
 	bool judgeIsBossRoom();
 
+	// 判断技能冷却
+	int judgeCoolDown();
+
 	// 手动线程控制
 	void manualThreadControl();
 
@@ -240,4 +243,7 @@ public:
 
 	// 奔跑进入下一个房间
 	void runToNextRoom(int direction);
+
+	// 获取冷却技能键位
+	int getCoolDownKey();
 };

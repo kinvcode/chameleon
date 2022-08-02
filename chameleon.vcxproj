@@ -195,6 +195,9 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="msdk.h" />
     <ClInclude Include="overloading.h" />
+    <ClInclude Include="PAGE1.h" />
+    <ClInclude Include="PAGE2.h" />
+    <ClInclude Include="PAGE3.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ReadWrite.h" />
     <ClInclude Include="Resource.h" />
@@ -207,6 +210,9 @@
     <ClCompile Include="chameleonDlg.cpp" />
     <ClCompile Include="dnf.cpp" />
     <ClCompile Include="loadDriver.cpp" />
+    <ClCompile Include="PAGE1.cpp" />
+    <ClCompile Include="PAGE2.cpp" />
+    <ClCompile Include="PAGE3.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

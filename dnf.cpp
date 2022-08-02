@@ -8,6 +8,7 @@
 
 extern CchameleonDlg* MainDlg;
 
+
 DNF::DNF(DWORD PID)
 {
 	this->PID = PID;
@@ -557,6 +558,26 @@ bool DNF::judgeIsBossRoom()
 	}
 }
 
+// 判断技能冷却
+int DNF::judgeCoolDown()
+{
+	//__int64 address;
+	//address = readLong(C_USER);
+	//address = readLong(address + 技能栏);
+	//address = readLong(address + 技能栏偏移);
+	//
+	//__int64 res = readLong(address + 技能位置);
+	//__int64 call = 0x143E31BC0;
+	//if (res != 0) {
+	//	
+	//}
+	//else {
+	//	return Keyboard_x;
+	//}
+
+	return Keyboard_x;
+}
+
 UINT manualThread(LPVOID pParam)
 {
 	// 手动逻辑处理
@@ -575,7 +596,7 @@ UINT manualThread(LPVOID pParam)
 		if (dnf->readInt(C_GAME_STATUS) == 3)
 		{
 			// 开启拾取
-			if (MainDlg->_switch_gather_items.GetCheck() == BST_CHECKED)
+			if (MainDlg->page1._switch_gather_items.GetCheck() == BST_CHECKED)
 			{
 				//全屏吸物
 				//dnf->gatherItems();
@@ -653,6 +674,15 @@ UINT autoThread(LPVOID pParam)
 
 				// 遍历图内对象
 				dnf->gatherAll();
+				// 判断技能冷却列表并释放随机技能
+				int key = dnf->getCoolDownKey();
+				if (key == Keyboard_x) {
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
+				}
+				else {
+					M_KeyPress(MainDlg->msdk_handle, key, 1);
+				}
+
 			}
 			else {
 				// 如果当前是BOSS
@@ -849,7 +879,12 @@ void DNF::gatherAll()
 
 		if (monster_type == 0x211 || monster_type == 0x121 || monster_type == 0x111)
 		{
-			item_quantity += 1;
+			// 0x211 领主
+			// 0x121 物品
+			// 0x111 ??
+			if (monster_type == 0x121) {
+				item_quantity += 1;
+			}
 			monster_coordinate = readCoordinate(monster_address);
 			user_coordinate = readCoordinate(readLong(C_USER));
 			if (monster_coordinate.z == 0)
@@ -900,34 +935,34 @@ COORDINATE DNF::readCoordinate(__int64 address)
 
 void DNF::firstRoomFunctions()
 {
-	if (MainDlg->_switch_score.GetCheck() == BST_CHECKED)
+	if (MainDlg->page1._switch_score.GetCheck() == BST_CHECKED)
 	{
 		superScore();
 	}
 
-	if (MainDlg->_switch_cool_down.GetCheck() == BST_CHECKED)
+	if (MainDlg->page1._switch_cool_down.GetCheck() == BST_CHECKED)
 	{
 		CString num;
-		MainDlg->_cool_down.GetWindowText(num);
+		MainDlg->page3._cool_down.GetWindowText(num);
 		float number = (float)_ttof(num);
 		skillCoolDown(number);
 	}
 
-	if (MainDlg->_switch_hook_damage.GetCheck() == BST_CHECKED)
+	if (MainDlg->page1._switch_hook_damage.GetCheck() == BST_CHECKED)
 	{
 		hookDamage(true);
 	}
 
-	if (MainDlg->_switch_three_speed.GetCheck() == BST_CHECKED)
+	if (MainDlg->page1._switch_three_speed.GetCheck() == BST_CHECKED)
 	{
 		CString attack_speed, move_speed, casting_speed;
-		MainDlg->_attack_speed.GetWindowText(attack_speed);
-		MainDlg->_move_speed.GetWindowText(move_speed);
-		MainDlg->_casting_speed.GetWindowText(casting_speed);
+		MainDlg->page3._attack_speed.GetWindowText(attack_speed);
+		MainDlg->page3._move_speed.GetWindowText(move_speed);
+		MainDlg->page3._casting_speed.GetWindowText(casting_speed);
 		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
 	}
 
-	if (MainDlg->_switch_hidden_user.GetCheck() == BST_CHECKED) 
+	if (MainDlg->page1._switch_hidden_user.GetCheck() == BST_CHECKED)
 	{
 		hiddenUser();
 	}
@@ -960,7 +995,7 @@ __int64 DNF::getUserPointer(__int64 emptyAddress)
 void DNF::hookDamage(bool on)
 {
 	CString value;
-	MainDlg->_damage_value.GetWindowText(value);
+	MainDlg->page3._damage_value.GetWindowText(value);
 
 	std::vector<byte>damge_data;
 
@@ -1015,16 +1050,6 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 
 	COORDINATE user_coor = readCoordinate(readLong(C_USER));
 
-	CString start_x_str, start_y_str, end_x_str, end_y_str;
-	start_x_str.Format(_T("人物坐标X:%d"), user_coor.x);
-	start_y_str.Format(_T("人物坐标Y:%d"), user_coor.y);
-	end_x_str.Format(_T("怪物坐标X:%d"), x);
-	end_y_str.Format(_T("怪物坐标Y:%d"), y);
-	MainDlg->Log(start_x_str);
-	MainDlg->Log(start_y_str);
-	MainDlg->Log(end_x_str);
-	MainDlg->Log(end_y_str);
-
 	bool x_arrived = false, y_arrived = false, isFirst = true;
 
 	int direction_x;
@@ -1044,6 +1069,9 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		direction_y = Keyboard_UpArrow;
 	}
 
+	// 误差距离
+	int target_range = 2;
+
 	while (true) {
 
 		user_coor = readCoordinate(readLong(C_USER));
@@ -1057,13 +1085,13 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 
 		// 如果切换到后台
 		if (!windowIsTop()) {
-			//MainDlg->Log(L"切换到后台，停止跑图");
+			//切换到后台，停止跑图;
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			break;
 		}
 
 		if (judgeGameStatus() != 3) {
-			//MainDlg->Log(L"不在图内，停止跑图");
+			//不在图内，停止跑图;
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			break;
 		}
@@ -1104,7 +1132,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 				}
 			}
 
-			if (abs(user_coor.y - y) > 10) {
+			if (abs(user_coor.y - y) > target_range) {
 				isFirst = false;
 				continue;
 			}
@@ -1129,7 +1157,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 					break;
 				}
 			}
-			if (abs(user_coor.x - x) > 10) {
+			if (abs(user_coor.x - x) > target_range) {
 				isFirst = false;
 				continue;
 			}
@@ -1205,27 +1233,25 @@ void DNF::autoNextRoom()
 	}
 
 	int next_direction = judgeNextRoomDiretion(room_coor, boss_coor);
-	
-	int direct = 0;
 
-	if (next_direction == 1) 
-	{
-		MainDlg->Log(L"向上奔跑");
-	}
-	if (next_direction == 2)
-	{
-		MainDlg->Log(L"向下奔跑");
-	}
-	if (next_direction == 3)
-	{
-		MainDlg->Log(L"向左奔跑");
-	}
-	if (next_direction == 4)
+	if (next_direction == 1)
 	{
 		MainDlg->Log(L"向右奔跑");
 	}
+	if (next_direction == 2)
+	{
+		MainDlg->Log(L"向左奔跑");
+	}
+	if (next_direction == 3)
+	{
+		MainDlg->Log(L"向下奔跑");
+	}
+	if (next_direction == 4)
+	{
+		MainDlg->Log(L"向上奔跑");
+	}
 
-	runToNextRoom(direct);
+	runToNextRoom(next_direction);
 
 }
 
@@ -1654,4 +1680,93 @@ void DNF::runToNextRoom(int direction)
 	handleEvents();
 	runToDestination(begin_x + end_x / 2, begin_y, true);
 	handleEvents();
+}
+
+// 获取冷却技能键位
+int DNF::getCoolDownKey()
+{
+
+	__int64 address;
+	address = readLong(C_USER);
+	address = readLong(address + C_SKILL_LIST);
+	address = readLong(address + C_SKILL_LIST_OFFSET);
+
+	__int64 position = rand() % 17;
+	__int64 position = 0;
+
+	__int64 skill_p = readLong(address + position * 8);
+
+	if (skill_p <= 0) {
+		return 0;
+	}
+
+	__int64 emptyAddress = C_EMPTY_ADDRESS + 3000;
+	std::vector<byte>asm_code;
+
+	asm_code = makeByteArray({ 72,131,236,32 });
+	asm_code = asm_code + makeByteArray({ 49,210 });
+	asm_code = asm_code + makeByteArray({ 72,185 }) + intToBytes(skill_p);
+	asm_code = asm_code + makeByteArray({ 255,21,2,0,0,0,235,8 });
+	asm_code = asm_code + intToBytes(C_COOL_DOWN_JUDGE_CALL);
+	asm_code = asm_code + makeByteArray({ 72,162 }) + intToBytes(emptyAddress);
+	asm_code = asm_code + makeByteArray({ 72,131,196,32 });
+
+	memoryAssambly(asm_code);
+
+	if (readLong(emptyAddress) < 1) {
+		switch (position)
+		{
+		case 0:
+			return Keyboard_a;
+			break;
+		case 1:
+			return Keyboard_s;
+			break;
+		case 2:
+			return Keyboard_d;
+			break;
+		case 3:
+			return Keyboard_f;
+			break;
+		case 4:
+			return Keyboard_g;
+			break;
+		case 5:
+			return Keyboard_h;
+			break;
+		case 6:
+			return Keyboard_x;
+			break;
+		case 7:
+			return Keyboard_q;
+			break;
+		case 8:
+			return Keyboard_w;
+			break;
+		case 9:
+			return Keyboard_e;
+			break;
+		case 10:
+			return Keyboard_r;
+			break;
+		case 11:
+			return Keyboard_t;
+			break;
+		case 12:
+			return Keyboard_y;
+			break;
+		case 14:
+			return Keyboard_LeftAlt;
+			break;
+		case 13:
+		case 15:
+		case 16:
+		default:
+			return Keyboard_x;
+			break;
+		}
+	}
+	else {
+		return Keyboard_x;
+	}
 }
