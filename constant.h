@@ -49,9 +49,11 @@
 #define C_BEGIN_ROOM_Y 0x17C // 起始坐标Y
 #define C_PASS_ROOM_OFFSET 0xF0 // 顺图偏移
 #define C_SHOE_OFFSET 0x5360 // 鞋子偏移
+// 新加的
 #define C_COOL_DOWN_JUDGE_CALL 0x143E31BC0 // 冷却判断CALL
 #define C_SKILL_LIST 0xACA8 // 技能栏
 #define C_SKILL_LIST_OFFSET 0x90 // 技能栏偏移
+#define C_COOR_CALL_OFFSET 0x1C8 // 坐标CALL偏移
 
 ////////////////////////[ 心 悦 基 址 区 域  ]///////////////////////////////////
 

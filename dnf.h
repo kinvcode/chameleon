@@ -246,4 +246,7 @@ public:
 
 	// 获取冷却技能键位
 	int getCoolDownKey();
+
+	// 坐标CALL
+	void coorCall(int x, int y, int z);
 };

@@ -655,25 +655,38 @@ UINT autoThread(LPVOID pParam)
 	{
 		if (dnf->judgeGameStatus() == 3)
 		{
-			// 地图穿透
-			dnf->penetrate(true);
-
 			// 如果没开门
 			if (dnf->judgeDoorOpen() == false)
 			{
+				MainDlg->Log(L"当前未开门");
+
+				dnf->penetrate(false);
 				handle_next_room = false;
 				clearance = false;
 				handle_room_times = 0;
 
 				// 首图功能
-				if (first_room == false && clearance == false)
+				if (first_room == false && dnf->judgeClearance() == false)
 				{
 					first_room = true;
+					// 上上空格
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
+					dnf->programDelay(300);
+					//// 右右空格
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
+					M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
+					MainDlg->Log(L"开启首图功能");
 					dnf->firstRoomFunctions();
 				}
 
-				// 遍历图内对象
+				// 遍历图内物品和怪物
+
+				// 遍历图内对象并聚集
 				dnf->gatherAll();
+
 				// 判断技能冷却列表并释放随机技能
 				int key = dnf->getCoolDownKey();
 				if (key == Keyboard_x) {
@@ -685,20 +698,48 @@ UINT autoThread(LPVOID pParam)
 
 			}
 			else {
+				MainDlg->Log(L"当前已开门");
+
+				if (dnf->judgeHaveItem()) {
+					MainDlg->Log(L"存在物品，关闭穿透，跟随物品");
+					dnf->penetrate(false);
+					dnf->gatherAll();
+				}
+				else {
+					MainDlg->Log(L"没有物品，开启穿透");
+					dnf->penetrate(true);
+				}
+
 				// 如果当前是BOSS
 				if (dnf->judgeIsBossRoom())
 				{
+					MainDlg->Log(L"当前BOSS房间");
+
 					// 通关->通关处理
 					if (dnf->judgeClearance())
 					{
+						dnf->gatherItems();
+						MainDlg->Log(L"当前已通关");
+
 						first_room = false;
 						if (clearance)
 						{
-							dnf->gatherItems();
+							// 关闭图内功能
+							MainDlg->Log(L"关闭图内功能");
+							dnf->closeDungeonFunctions();
+
 							Gabriel += 1;
-							if (Gabriel == 15)
+							if (Gabriel >= 15)
 							{
 								//再次挑战();
+								MainDlg->Log(L"再次挑战");
+								if (Gabriel >= 30) {
+									M_KeyPress(MainDlg->msdk_handle, Keyboard_ESCAPE, 2);
+									M_KeyPress(MainDlg->msdk_handle, Keyboard_RightControl, 1);
+								}
+								else {
+									M_KeyPress(MainDlg->msdk_handle, Keyboard_RightControl, 1);
+								}
 							}
 							if (Gabriel == 30)
 							{
@@ -716,7 +757,7 @@ UINT autoThread(LPVOID pParam)
 					}
 				}
 				else {
-					dnf->gatherItems();
+					MainDlg->Log(L"当前普通房间");
 
 					// 没有物品->进行过图处理
 					if (!dnf->judgeHaveItem())
@@ -725,7 +766,9 @@ UINT autoThread(LPVOID pParam)
 						handle_room_times += 1;
 						if (handle_room_times >= 3)
 						{
+							MainDlg->Log(L"即将进入下个房间");
 							dnf->autoNextRoom();
+							M_ReleaseAllKey(MainDlg->msdk_handle);
 							handle_room_times = 0;
 						}
 					}
@@ -887,16 +930,19 @@ void DNF::gatherAll()
 			}
 			monster_coordinate = readCoordinate(monster_address);
 			user_coordinate = readCoordinate(readLong(C_USER));
-			if (monster_coordinate.z == 0)
+			if (abs(monster_coordinate.x - user_coordinate.x) < 20 && abs(monster_coordinate.y - user_coordinate.y) < 20)
 			{
-				if (abs(monster_coordinate.x - user_coordinate.x) < 20 && abs(monster_coordinate.y - user_coordinate.y) < 20)
-				{
-					continue;
-				}
-				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 32, (float)user_coordinate.x);
-				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 36, (float)user_coordinate.y);
+				continue;
 			}
+
+			// 移动对象
+			//writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 32, (float)user_coordinate.x);
+			//writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 36, (float)user_coordinate.y);
+
+			// 移动到对象
+			coorCall(monster_coordinate.x, monster_coordinate.y, monster_coordinate.z);
 			handleEvents();
+			break;
 		}
 	}
 
@@ -1109,6 +1155,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		if (is_room) {
 			if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != a ||
 				readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != b) {
+				MainDlg->Log(L"房间发生变化，停止按键");
 				// 弹起移动按键
 				M_ReleaseAllKey(MainDlg->msdk_handle);
 				break;
@@ -1167,9 +1214,9 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 			}
 		}
 
-
-
 		if (x_arrived && y_arrived) {
+			MainDlg->Log(L"到达目标位置，停止按键");
+
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			return true;
 			break;
@@ -1180,7 +1227,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 
 	//handleEvents();
 
-	//MainDlg->Log(L"跑图结束");
+	MainDlg->Log(L"跑图结束，停止按键");
 	M_ReleaseAllKey(MainDlg->msdk_handle);
 
 	return false;
@@ -1675,11 +1722,27 @@ void DNF::runToNextRoom(int direction)
 		return;
 	}
 
-	runToDestination(calc_x, calc_y, true);
-	programDelay(100);
-	handleEvents();
+	COORDINATE cur_room;
+	cur_room.x = (int)readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X);
+	cur_room.y = (int)readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y);
+
 	runToDestination(begin_x + end_x / 2, begin_y, true);
-	handleEvents();
+
+	// 查看房间是否改变
+	if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != cur_room.x ||
+		readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != cur_room.y ) {
+		MainDlg->Log(L"房间跑图一次完成");
+	}
+	else {
+		programDelay(100);
+		handleEvents();
+
+		runToDestination(calc_x, calc_y, true);
+
+		handleEvents();
+	}
+
+
 }
 
 // 获取冷却技能键位
@@ -1692,7 +1755,7 @@ int DNF::getCoolDownKey()
 	address = readLong(address + C_SKILL_LIST_OFFSET);
 
 	__int64 position = rand() % 17;
-	__int64 position = 0;
+	//__int64 position = 0;
 
 	__int64 skill_p = readLong(address + position * 8);
 
@@ -1769,4 +1832,24 @@ int DNF::getCoolDownKey()
 	else {
 		return Keyboard_x;
 	}
+}
+
+// 坐标CALL
+void DNF::coorCall(int x, int y, int z)
+{
+	__int64 target_p = readLong(C_USER);
+
+	if (target_p < 1) {
+		return;
+	}
+
+	std::vector<byte> asm_code = makeByteArray({ 72,129,236,0,1,0,0 });
+	asm_code = asm_code + makeByteArray({ 65,185 }) + intToBytes2(z);
+	asm_code = asm_code + makeByteArray({ 65,184 }) + intToBytes2(y);
+	asm_code = asm_code + makeByteArray({ 186 }) + intToBytes2(x);
+	asm_code = asm_code + makeByteArray({ 72,185 }) + intToBytes(target_p);
+	asm_code = asm_code + makeByteArray({ 72,139,1 });
+	asm_code = asm_code + makeByteArray({ 255,144 }) + intToBytes(C_COOR_CALL_OFFSET);
+	asm_code = asm_code + makeByteArray({ 72,129,196,0,1,0,0 });
+	memoryAssambly(asm_code);
 }
