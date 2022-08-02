@@ -578,7 +578,8 @@ UINT manualThread(LPVOID pParam)
 			if (MainDlg->_switch_gather_items.GetCheck() == BST_CHECKED)
 			{
 				//全屏吸物
-				dnf->gatherItems();
+				//dnf->gatherItems();
+				dnf->gatherAll();
 			}
 
 			// 如果是第一个房间
@@ -642,54 +643,16 @@ UINT autoThread(LPVOID pParam)
 				handle_next_room = false;
 				clearance = false;
 				handle_room_times = 0;
-				//每图循环(); 未完成:跟随怪物，输出伤害 // 打怪逻辑处理
 
-				// 获取第一个怪物坐标
-				__int64 head_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
-				__int64 end_address = dnf->readLong(dnf->readLong(dnf->readLong(dnf->readLong(dnf->C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
-
-				int monster_quantity = (int)(end_address - head_address) / 24;
-
-				for (int i = 1; i <= monster_quantity; i++)
+				// 首图功能
+				if (first_room == false && clearance == false)
 				{
-					__int64 monster_address = dnf->readLong(dnf->readLong(head_address + (__int64)i * 24) + 16) - 32;
-					int monster_type = dnf->readInt(monster_address + C_TYPE_OFFSET);
-					int monster_camp = dnf->readInt(monster_address + C_CAMP_OFFSET);
-					int monster_code = dnf->readInt(monster_address + C_CODE_OFFSET);
-					int monster_blood = dnf->readInt(monster_address + C_MONSTER_BLOOD);
-
-					// 处理特殊对象：格蓝迪柱子
-					if (monster_code == 109051366 || monster_code == 109051365 || monster_code == 109051364) {
-						// 暂时不处理
-					}
-
-					// 需要清理的怪物或建筑
-					if (monster_type == 529 || monster_type == 273) {
-						if (monster_address != dnf->readLong(dnf->C_USER)) {
-							if (monster_camp != 0 && monster_code != 0 && monster_blood != 0) {
-								// 获取到第一个怪物地址
-								// 移动人物到此怪物地址
-								COORDINATE monster_coor = dnf->readCoordinate(monster_address);
-
-								// 输出目标名称
-								CString name2;
-								CStringA name;
-								name = dnf->Unicode2Ansi(dnf->readByteArray(dnf->readLong(monster_address + C_NAME_OFFSET), 50));
-								name2 = name;
-								MainDlg->Log(name2);
-								// 到达目标后立即进行攻击（无论目标是否已经移动）
-								dnf->runToDestination(monster_coor.x, monster_coor.y, false);
-
-								// 攻击逻辑（暂时使用普通攻击）
-								M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
-
-								break;
-							}
-						}
-					}
-
-					// 如果是物品，则进行捡物品
+					first_room = true;
+					dnf->firstRoomFunctions();
 				}
+
+				// 遍历图内对象
+				dnf->gatherAll();
 			}
 			else {
 				// 如果当前是BOSS
@@ -729,11 +692,6 @@ UINT autoThread(LPVOID pParam)
 					if (!dnf->judgeHaveItem())
 					{
 						// 过图处理
-						if (!first_room)
-						{
-							first_room = true;
-							dnf->firstRoomFunctions();
-						}
 						handle_room_times += 1;
 						if (handle_room_times >= 3)
 						{
@@ -867,6 +825,54 @@ void DNF::gatherItems()
 	}
 }
 
+void DNF::gatherAll()
+{
+	if (judgeGameStatus() != 3)
+	{
+		return;
+	}
+
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
+	int item_quantity = 0;
+	COORDINATE monster_coordinate;
+	COORDINATE user_coordinate;
+
+	int monster_quantity = (int)(end_address - head_address) / 24;
+	for (__int64 i = 1; i <= monster_quantity; i++)
+	{
+		__int64 monster_address = readLong(readLong(head_address + i * 24) + 16) - 32;
+		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
+		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
+		int monster_code = readInt(monster_address + C_CODE_OFFSET);
+		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
+
+		if (monster_type == 0x211 || monster_type == 0x121 || monster_type == 0x111)
+		{
+			item_quantity += 1;
+			monster_coordinate = readCoordinate(monster_address);
+			user_coordinate = readCoordinate(readLong(C_USER));
+			if (monster_coordinate.z == 0)
+			{
+				if (abs(monster_coordinate.x - user_coordinate.x) < 20 && abs(monster_coordinate.y - user_coordinate.y) < 20)
+				{
+					continue;
+				}
+				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 32, (float)user_coordinate.x);
+				writeFloat(readLong(monster_address + C_OBJECT_COORDINATE) + 36, (float)user_coordinate.y);
+			}
+			handleEvents();
+		}
+	}
+
+	if (item_quantity > 0)
+	{
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
+		programDelay(150);
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 116,21 }));
+	}
+}
+
 COORDINATE DNF::readCoordinate(__int64 address)
 {
 	__int64 pointer;
@@ -919,6 +925,11 @@ void DNF::firstRoomFunctions()
 		MainDlg->_move_speed.GetWindowText(move_speed);
 		MainDlg->_casting_speed.GetWindowText(casting_speed);
 		threeSpeed(_ttoi(attack_speed), _ttoi(casting_speed), _ttoi(move_speed));
+	}
+
+	if (MainDlg->_switch_hidden_user.GetCheck() == BST_CHECKED) 
+	{
+		hiddenUser();
 	}
 }
 
@@ -1199,22 +1210,18 @@ void DNF::autoNextRoom()
 
 	if (next_direction == 1) 
 	{
-		direct = 2;
 		MainDlg->Log(L"向上奔跑");
 	}
 	if (next_direction == 2)
 	{
-		direct = 3;
 		MainDlg->Log(L"向下奔跑");
 	}
 	if (next_direction == 3)
 	{
-		direct = 0;
 		MainDlg->Log(L"向左奔跑");
 	}
 	if (next_direction == 4)
 	{
-		direct = 1;
 		MainDlg->Log(L"向右奔跑");
 	}
 
@@ -1238,22 +1245,22 @@ int DNF::judgeNextRoomDiretion(COORDINATE current, COORDINATE boss)
 	{
 		if (y == 1)
 		{
-			return 1;
+			return 2;// 上
 		}
 		else
 		{
-			return 2;
+			return 3;// 下
 		}
 	}
 	else if (y == 0)
 	{
 		if (x == 1)
 		{
-			return 3;
+			return 0;// 左
 		}
 		else
 		{
-			return 4;
+			return 1;// 右
 		}
 	}
 
@@ -1499,6 +1506,7 @@ void DNF::pathCalc(std::vector<std::vector<AISLEDATA>> map_tag, COORDINATE begin
 				} while (not_check_node.current.x != begin.x || not_check_node.current.y != begin.y);
 				cross_way.insert(cross_way.begin(), begin);
 				cross_way.insert(cross_way.end(), end);
+				return;
 			}
 		}
 

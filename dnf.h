@@ -169,6 +169,9 @@ public:
 	// 全屏聚物
 	void gatherItems();
 
+	// 全屏聚物+聚怪+聚建筑物
+	void gatherAll();
+
 	// 读取坐标
 	COORDINATE readCoordinate(__int64 address);
 

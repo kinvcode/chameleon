@@ -103,6 +103,7 @@ BOOL CchameleonDlg::OnInitDialog()
 	_switch_gather_items.SetCheck(BST_CHECKED);
 	_switch_cool_down.SetCheck(BST_CHECKED);
 	_switch_hook_damage.SetCheck(BST_CHECKED);
+	_switch_hidden_user.SetCheck(BST_CHECKED);
 
 
 	_user_name.SetWindowText(L"旭旭宝宝");
@@ -189,9 +190,9 @@ void CchameleonDlg::OnBnClickedButton1()
 		// 启动读取人物基址线程
 		_DNF->userPonterUpdate();
 		// 启动手动线程
-		_DNF->manualThreadControl();
+		//_DNF->manualThreadControl();
 		// 启动自动线程
-		//_DNF->autoThreadControl();
+		_DNF->autoThreadControl();
 	}
 }
 
