@@ -72,6 +72,7 @@ BEGIN_MESSAGE_MAP(CchameleonDlg, CDialogEx)
 	//ON_BN_CLICKED(IDC_CHECK6, &CchameleonDlg::OnBnClickedCheck6)
 	//ON_BN_CLICKED(IDC_BUTTON8, &CchameleonDlg::OnBnClickedButton8)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB1, &CchameleonDlg::OnTcnSelchangeTab1)
+	ON_WM_HOTKEY()
 END_MESSAGE_MAP()
 
 
@@ -118,9 +119,6 @@ BOOL CchameleonDlg::OnInitDialog()
 
 	Log(L"请启动游戏然后点击初始化");
 
-
-	//
-
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -158,6 +156,12 @@ void CchameleonDlg::OnPaint()
 HCURSOR CchameleonDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CchameleonDlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)
+{
+	// 
+	CDialogEx::OnHotKey(nHotKeyId, nKey1, nKey2);
 }
 
 void CchameleonDlg::initTabCtl() 
@@ -219,7 +223,11 @@ void CchameleonDlg::OnBnClickedButton1()
 		// 初始化DNF
 		page2._DNF = _DNF;
 
+		// 初始化tab控件
 		initTabCtl();
+
+		// 初始化热键
+		RegisterHotKey(GetSafeHwnd(), 1, NULL, VK_END); // 自动开关
 
 		Log(L"初始化成功!");
 		initButton.ShowWindow(SW_HIDE);

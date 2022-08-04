@@ -42,6 +42,16 @@ struct MAPNODE
 	COORDINATE final;
 };
 
+struct DUNGEONOBJ
+{
+	__int64 p;
+	int type;
+	int camp;
+	int code;
+	int blood;
+	COORDINATE coor;
+};
+
 class DNF
 {
 public:
@@ -53,6 +63,12 @@ public:
 
 	// DNF句柄
 	HANDLE handle = NULL;
+
+	// 图内怪物列表
+	std::vector<DUNGEONOBJ> _monster_list;
+
+	// 图内物品列表
+	std::vector<DUNGEONOBJ> _item_list;
 
 	// 是否窗口置顶
 	bool windowTop = false;
@@ -157,6 +173,9 @@ public:
 	// 判断技能冷却
 	int judgeCoolDown();
 
+	// 判断是否是加百利商店
+	bool judgeGabriel();
+
 	// 手动线程控制
 	void manualThreadControl();
 
@@ -171,6 +190,9 @@ public:
 
 	// 全屏聚物
 	void gatherItems();
+
+	// 通过物品列表进行聚物
+	void gatherItemsByItems(std::vector<DUNGEONOBJ> items);
 
 	// 全屏聚物+聚怪+聚建筑物
 	void gatherAll();
@@ -200,7 +222,7 @@ public:
 	void closeDungeonFunctions();
 
 	// 跑到目标
-	BOOL runToDestination(int x, int y, bool is_room);
+	BOOL runToDestination(int x, int y, bool is_room, int target_range);
 
 	// 走到目标
 	void walkToDestination();
@@ -234,7 +256,7 @@ public:
 
 	// 判断方向
 	bool judgeDirection(int aisle, int direction);
-	
+
 	// 路径算法
 	void pathCalc(std::vector<std::vector<AISLEDATA>> map_tag, COORDINATE begin, COORDINATE end, int width, int height, std::vector<COORDINATE>& cross_way);
 
@@ -249,4 +271,7 @@ public:
 
 	// 坐标CALL
 	void coorCall(int x, int y, int z);
+
+	// 获取图内所有需要处理的对象
+	void getDungeonAllObj();
 };

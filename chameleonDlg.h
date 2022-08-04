@@ -40,6 +40,9 @@ protected:
 	void initTabCtl();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+
+	afx_msg void OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2); //声明消息处理函数
+
 	DECLARE_MESSAGE_MAP()
 
 public:

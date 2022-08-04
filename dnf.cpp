@@ -166,6 +166,7 @@ int DNF::readInt(__int64 address)
 	return 0;
 }
 
+// 总是异常
 __int64 DNF::readLong(__int64 address)
 {
 	handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
@@ -578,6 +579,16 @@ int DNF::judgeCoolDown()
 	return Keyboard_x;
 }
 
+bool DNF::judgeGabriel() 
+{
+	//__int64 type = readLong(通关商店类型);
+	//// 1000 大妈；1003 加百利； 1007 ?
+	//if (type == 1003) {
+	//	return true;
+	//}
+	return false;
+}
+
 UINT manualThread(LPVOID pParam)
 {
 	// 手动逻辑处理
@@ -600,7 +611,7 @@ UINT manualThread(LPVOID pParam)
 			{
 				//全屏吸物
 				//dnf->gatherItems();
-				dnf->gatherAll();
+				//dnf->gatherAll();
 			}
 
 			// 如果是第一个房间
@@ -655,55 +666,58 @@ UINT autoThread(LPVOID pParam)
 	{
 		if (dnf->judgeGameStatus() == 3)
 		{
+			// 遍历怪物与物品
+			dnf->getDungeonAllObj();
+
 			// 如果没开门
 			if (dnf->judgeDoorOpen() == false)
 			{
 				MainDlg->Log(L"当前未开门");
 
-				dnf->penetrate(false);
+				//dnf->penetrate(false);
 				handle_next_room = false;
 				clearance = false;
 				handle_room_times = 0;
 
 				// 首图功能
-				if (first_room == false && dnf->judgeClearance() == false)
+				if (first_room == false)
 				{
-					first_room = true;
-					// 上上空格
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
-					dnf->programDelay(300);
-					//// 右右空格
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
 					MainDlg->Log(L"开启首图功能");
+					first_room = true;
+					dnf->penetrate(true);
 					dnf->firstRoomFunctions();
 				}
 
-				// 遍历图内物品和怪物
-
-				// 遍历图内对象并聚集
-				dnf->gatherAll();
-
-				// 判断技能冷却列表并释放随机技能
-				int key = dnf->getCoolDownKey();
-				if (key == Keyboard_x) {
-					M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
+				// 处理首个怪物
+				if (dnf->_monster_list.size() > 0) {
+					// 跟踪怪物
+					COORDINATE monster_coor = dnf->_monster_list[0].coor;
+					MainDlg->Log(L"跑到怪物位置");
+					bool arrive_target = dnf->runToDestination(monster_coor.x, monster_coor.y, false, 20);
+					if (arrive_target) {
+						// 判断技能冷却列表并释放随机技能
+						int key = dnf->getCoolDownKey();
+						if (key == Keyboard_x) {
+							MainDlg->Log(L"进行普通攻击");
+							M_KeyPress(MainDlg->msdk_handle, Keyboard_x, 3);
+						}
+						else {
+							MainDlg->Log(L"进行技能攻击");
+							M_KeyPress(MainDlg->msdk_handle, key, 1);
+						}
+					}
+					else {
+						MainDlg->Log(L"到达目标失败,不采取动作");
+					}
 				}
-				else {
-					M_KeyPress(MainDlg->msdk_handle, key, 1);
-				}
-
 			}
 			else {
 				MainDlg->Log(L"当前已开门");
 
-				if (dnf->judgeHaveItem()) {
-					MainDlg->Log(L"存在物品，关闭穿透，跟随物品");
+				if (dnf->_item_list.size() > 0) {
+					MainDlg->Log(L"存在物品，关闭穿透，进行聚物");
 					dnf->penetrate(false);
-					dnf->gatherAll();
+					dnf->gatherItemsByItems(dnf->_item_list);
 				}
 				else {
 					MainDlg->Log(L"没有物品，开启穿透");
@@ -718,7 +732,6 @@ UINT autoThread(LPVOID pParam)
 					// 通关->通关处理
 					if (dnf->judgeClearance())
 					{
-						dnf->gatherItems();
 						MainDlg->Log(L"当前已通关");
 
 						first_room = false;
@@ -774,6 +787,11 @@ UINT autoThread(LPVOID pParam)
 					}
 				}
 			}
+
+			// 清空物品容器
+			dnf->_item_list.clear();
+			// 清空怪物容器
+			dnf->_monster_list.clear();
 		}
 
 		if (dnf->judgeGameStatus() == 1 && change_user == false)
@@ -800,6 +818,12 @@ UINT userPointerThread(LPVOID pParam)
 
 	while (true)
 	{
+		// 如果切换到后台
+		if (!dnf->windowIsTop()) {
+			//切换到后台，停止跑图;
+			M_ReleaseAllKey(MainDlg->msdk_handle);
+		}
+
 		if (dnf->readInt(0x140000000) != 0x905A4D) {
 			// 游戏结束
 			statusChange = false;
@@ -818,6 +842,7 @@ UINT userPointerThread(LPVOID pParam)
 			}
 			statusChange = true;
 			// 人物指针已改变
+			MainDlg->Log(L"人物指针已改变");
 		}
 		else if (dnf->judgeGameStatus() == 0)
 		{
@@ -891,6 +916,36 @@ void DNF::gatherItems()
 	}
 
 	if (item_quantity > 0)
+	{
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
+		programDelay(150);
+		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 116,21 }));
+	}
+}
+
+void DNF::gatherItemsByItems(std::vector<DUNGEONOBJ> items) 
+{
+	if (judgeGameStatus() != 3)
+	{
+		return;
+	}
+
+	COORDINATE user_coordinate = readCoordinate(readLong(C_USER));
+
+	size_t length = items.size();
+
+	for (size_t i = 0; i < length; i++) 
+	{
+		if (abs(items[i].coor.x - user_coordinate.x) < 20 && abs(items[i].coor.y - user_coordinate.y) < 20)
+		{
+			continue;
+		}
+		writeFloat(readLong(items[i].p + C_OBJECT_COORDINATE) + 32, (float)user_coordinate.x);
+		writeFloat(readLong(items[i].p + C_OBJECT_COORDINATE) + 36, (float)user_coordinate.y);
+		handleEvents();
+	}
+
+	if (length > 0)
 	{
 		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
 		programDelay(150);
@@ -981,6 +1036,18 @@ COORDINATE DNF::readCoordinate(__int64 address)
 
 void DNF::firstRoomFunctions()
 {
+	// 上上空格
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
+
+	programDelay(300);
+
+	//// 右右空格
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
+	M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
+
 	if (MainDlg->page1._switch_score.GetCheck() == BST_CHECKED)
 	{
 		superScore();
@@ -1082,11 +1149,16 @@ void DNF::closeDungeonFunctions()
 }
 
 // 跑到目标
-BOOL DNF::runToDestination(int x, int y, bool is_room = false)
+BOOL DNF::runToDestination(int x, int y, bool is_room = false, int target_range = 10)
 {
 	if (x < 1 || y < 1) {
+		MainDlg->Log(L"位置太近，放弃跑图");
 		return false;
 	}
+
+	CString coor;
+	coor.Format(L"目标坐标 X:%d Y:%d", x, y);
+	MainDlg->Log(coor);
 
 	__int64 a, b;
 	if (is_room) {
@@ -1096,7 +1168,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 
 	COORDINATE user_coor = readCoordinate(readLong(C_USER));
 
-	bool x_arrived = false, y_arrived = false, isFirst = true;
+	bool x_arrived = false, y_arrived = false, isFirst = true, arrive_next = false;
 
 	int direction_x;
 	int direction_y;
@@ -1115,9 +1187,6 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		direction_y = Keyboard_UpArrow;
 	}
 
-	// 误差距离
-	int target_range = 2;
-
 	while (true) {
 
 		user_coor = readCoordinate(readLong(C_USER));
@@ -1129,15 +1198,9 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 			M_KeyDown(MainDlg->msdk_handle, direction_y);
 		}
 
-		// 如果切换到后台
-		if (!windowIsTop()) {
-			//切换到后台，停止跑图;
-			M_ReleaseAllKey(MainDlg->msdk_handle);
-			break;
-		}
-
 		if (judgeGameStatus() != 3) {
 			//不在图内，停止跑图;
+			MainDlg->Log(L"人物已离开图内，停止跑图");
 			M_ReleaseAllKey(MainDlg->msdk_handle);
 			break;
 		}
@@ -1155,6 +1218,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		if (is_room) {
 			if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != a ||
 				readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != b) {
+				arrive_next = true;
 				MainDlg->Log(L"房间发生变化，停止按键");
 				// 弹起移动按键
 				M_ReleaseAllKey(MainDlg->msdk_handle);
@@ -1166,14 +1230,14 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		if (y_arrived == false) {
 			if (direction_y == Keyboard_UpArrow) {
 				if (y - user_coor.y > 10) {
-					//MainDlg->Log(L"超出Y范围，停止");
+					MainDlg->Log(L"向上超出Y范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
 			}
 			else {
 				if (user_coor.y - y > 10) {
-					//MainDlg->Log(L"超出Y范围，停止");
+					MainDlg->Log(L"向下超出Y范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
@@ -1192,14 +1256,14 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false)
 		if (x_arrived == false) {
 			if (direction_x == Keyboard_RightArrow) {
 				if (user_coor.x - x > 10) {
-					//MainDlg->Log(L"超出X范围，停止");
+					MainDlg->Log(L"向右超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
 			}
 			else {
 				if (x - user_coor.x > 10) {
-					//MainDlg->Log(L"超出X范围，停止");
+					MainDlg->Log(L"向左超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
@@ -1726,18 +1790,18 @@ void DNF::runToNextRoom(int direction)
 	cur_room.x = (int)readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X);
 	cur_room.y = (int)readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y);
 
-	runToDestination(begin_x + end_x / 2, begin_y, true);
+	runToDestination(begin_x + end_x / 2, begin_y, true, 2);
 
 	// 查看房间是否改变
 	if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != cur_room.x ||
-		readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != cur_room.y ) {
+		readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != cur_room.y) {
 		MainDlg->Log(L"房间跑图一次完成");
 	}
 	else {
 		programDelay(100);
 		handleEvents();
 
-		runToDestination(calc_x, calc_y, true);
+		runToDestination(calc_x, calc_y, true, 2);
 
 		handleEvents();
 	}
@@ -1852,4 +1916,90 @@ void DNF::coorCall(int x, int y, int z)
 	asm_code = asm_code + makeByteArray({ 255,144 }) + intToBytes(C_COOR_CALL_OFFSET);
 	asm_code = asm_code + makeByteArray({ 72,129,196,0,1,0,0 });
 	memoryAssambly(asm_code);
+}
+
+void DNF::getDungeonAllObj()
+{
+	// 遍历怪物
+	if (judgeGameStatus() != 3)
+	{
+		_item_list.clear();
+		_monster_list.clear();
+		return;
+	}
+
+	__int64 head_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_HEAD);
+	__int64 end_address = readLong(readLong(readLong(readLong(C_USER) + C_MAP_OFFSET) + 16) + C_MAP_END);
+
+	if (head_address == 0 || end_address == 0) {
+		_item_list.clear();
+		_monster_list.clear();
+		return;
+	}
+
+	int item_quantity = 0;
+
+	int monster_quantity = (int)(end_address - head_address) / 24;
+
+	if (monster_quantity == 0) {
+		_item_list.clear();
+		_monster_list.clear();
+		return;
+	}
+
+	for (__int64 i = 1; i <= monster_quantity; i++)
+	{
+		__int64 monster_address = readLong(readLong(head_address + i * 24) + 16) - 32;
+		int monster_camp = readInt(monster_address + C_CAMP_OFFSET);
+		int monster_type = readInt(monster_address + C_TYPE_OFFSET);
+		int monster_code = readInt(monster_address + C_CODE_OFFSET);
+		int monster_blood = readInt(monster_address + C_MONSTER_BLOOD);
+		COORDINATE monster_coor = readCoordinate(monster_address);
+
+		// 物品
+		if (monster_type == 289 && monster_coor.z == 0)
+		{
+			DUNGEONOBJ item;
+			item.p = monster_address;
+			item.blood = monster_blood;
+			item.type = monster_type;
+			item.camp = monster_camp;
+			item.code = monster_code;
+			item.coor = monster_coor;
+			_item_list.push_back(item);
+		}
+
+		// 怪物
+		if (monster_type == 273 || monster_type == 529)
+		{
+			if (monster_camp != 0 && monster_blood != 0)
+			{
+				DUNGEONOBJ monster;
+				monster.p = monster_address;
+				monster.blood = monster_blood;
+				monster.type = monster_type;
+				monster.camp = monster_camp;
+				monster.code = monster_code;
+				monster.coor = monster_coor;
+				if (monster_coor.x != 0 && monster_coor.y != 0)
+				{
+					_monster_list.push_back(monster);
+				}
+			}
+		}
+	}
+
+	// 对怪物容器进行排序(冒泡)
+	int i, j, len;
+	DUNGEONOBJ temp;
+	len = (int)_monster_list.size();
+	for (i = 0; i < len - 1; i++) {
+		for (j = 0; j < len - 1 - i; j++) {
+			if (_monster_list[j].coor.x > _monster_list[j + 1].coor.x) {
+				temp = _monster_list[j];
+				_monster_list[j] = _monster_list[j + 1];
+				_monster_list[j + 1] = temp;
+			}
+		}
+	}
 }
