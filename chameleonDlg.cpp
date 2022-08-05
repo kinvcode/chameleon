@@ -92,6 +92,8 @@ BOOL CchameleonDlg::OnInitDialog()
 
 	SetWindowText(L"变色龙");
 
+	Console.SetLimitText(UINT_MAX);
+
 	// 初始化数值
 	//_attack_speed.SetWindowText(L"1000");
 	//_casting_speed.SetWindowText(L"2000");
@@ -116,6 +118,9 @@ BOOL CchameleonDlg::OnInitDialog()
 	if (msdk_handle == INVALID_HANDLE_VALUE) {
 		Log(L"模拟按键开启失败");
 	}
+
+	//M_SetParam(msdk_handle, 2, 100, 300);
+
 
 	Log(L"请启动游戏然后点击初始化");
 
@@ -164,7 +169,7 @@ void CchameleonDlg::OnHotKey(UINT nHotKeyId, UINT nKey1, UINT nKey2)
 	CDialogEx::OnHotKey(nHotKeyId, nKey1, nKey2);
 }
 
-void CchameleonDlg::initTabCtl() 
+void CchameleonDlg::initTabCtl()
 {
 	// 初始化tab控件
 	_ctl_tab.InsertItem(0, L"主界面");

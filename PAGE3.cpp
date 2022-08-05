@@ -46,7 +46,7 @@ BOOL PAGE3::OnInitDialog()
 	_move_speed.SetWindowText(L"1000");
 
 	_cool_down.SetWindowText(L"70");
-	_damage_value.SetWindowText(L"196688");
+	_damage_value.SetWindowText(L"1096688");
 
 	return TRUE;
 }

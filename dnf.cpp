@@ -5,6 +5,7 @@
 #include "msdk.h"
 #include "UsbHidKeyCode.h"
 #include "constant.h"
+#include <time.h>
 
 extern CchameleonDlg* MainDlg;
 
@@ -660,6 +661,7 @@ UINT autoThread(LPVOID pParam)
 	bool handle_next_room = false;
 	int Gabriel = 0;
 	int handle_room_times = 0;
+	int gather_item_times = 0;
 
 	//
 	while (true)
@@ -693,7 +695,7 @@ UINT autoThread(LPVOID pParam)
 					// 跟踪怪物
 					COORDINATE monster_coor = dnf->_monster_list[0].coor;
 					MainDlg->Log(L"跑到怪物位置");
-					bool arrive_target = dnf->runToDestination(monster_coor.x, monster_coor.y, false, 20);
+					bool arrive_target = dnf->runToDestination(monster_coor.x, monster_coor.y, false, 50);
 					if (arrive_target) {
 						// 判断技能冷却列表并释放随机技能
 						int key = dnf->getCoolDownKey();
@@ -715,6 +717,7 @@ UINT autoThread(LPVOID pParam)
 				MainDlg->Log(L"当前已开门");
 
 				if (dnf->_item_list.size() > 0) {
+					gather_item_times++;
 					MainDlg->Log(L"存在物品，关闭穿透，进行聚物");
 					dnf->penetrate(false);
 					dnf->gatherItemsByItems(dnf->_item_list);
@@ -773,7 +776,7 @@ UINT autoThread(LPVOID pParam)
 					MainDlg->Log(L"当前普通房间");
 
 					// 没有物品->进行过图处理
-					if (!dnf->judgeHaveItem())
+					if (dnf->_item_list.size() == 0 || gather_item_times > 3)
 					{
 						// 过图处理
 						handle_room_times += 1;
@@ -781,8 +784,8 @@ UINT autoThread(LPVOID pParam)
 						{
 							MainDlg->Log(L"即将进入下个房间");
 							dnf->autoNextRoom();
-							M_ReleaseAllKey(MainDlg->msdk_handle);
 							handle_room_times = 0;
+							gather_item_times = 0;
 						}
 					}
 				}
@@ -796,6 +799,8 @@ UINT autoThread(LPVOID pParam)
 
 		if (dnf->judgeGameStatus() == 1 && change_user == false)
 		{
+			first_room = false;
+
 			handle_room_times += 1;
 			if (handle_room_times > 12)
 			{
@@ -1041,12 +1046,14 @@ void DNF::firstRoomFunctions()
 	M_KeyPress(MainDlg->msdk_handle, Keyboard_UpArrow, 1);
 	M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
 
-	programDelay(300);
+	M_DelayRandom(200,350);
 
 	//// 右右空格
 	M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
 	M_KeyPress(MainDlg->msdk_handle, Keyboard_RightArrow, 1);
 	M_KeyPress(MainDlg->msdk_handle, Keyboard_KongGe, 1);
+
+	M_DelayRandom(200, 350);
 
 	if (MainDlg->page1._switch_score.GetCheck() == BST_CHECKED)
 	{
@@ -1187,14 +1194,25 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false, int target_range 
 		direction_y = Keyboard_UpArrow;
 	}
 
+	// 记录当前时间戳
+	time_t cur_time = time(NULL);
+
 	while (true) {
+
+		// 如果跑图时间超过5秒。则直接退出跑图
+		if (time(NULL) - cur_time > 5) {
+			MainDlg->Log(L"跑图超时，退出跑图");
+			return false;
+		}
 
 		user_coor = readCoordinate(readLong(C_USER));
 
 		if (isFirst) {
 			MainDlg->Log(L"重新跑图");
 			M_KeyPress(MainDlg->msdk_handle, direction_x, 1);
+			M_DelayRandom(50,100);
 			M_KeyDown(MainDlg->msdk_handle, direction_x);
+			M_DelayRandom(100, 150);
 			M_KeyDown(MainDlg->msdk_handle, direction_y);
 		}
 
@@ -1207,7 +1225,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false, int target_range 
 
 		// 判断人物动作
 		//if (decrypt(readLong(C_USER) + C_MOVEMENT_ID) != 14) {
-		//	MainDlg->Log(L"人物动作不符合，停止跑图");
+		//	MainDlg->Log(L"当前不是跑步动作，停止跑图");
 		//	// 弹起移动按键
 		//	keyboardUp(direction_x);
 		//	keyboardUp(direction_y);
@@ -1243,7 +1261,7 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false, int target_range 
 				}
 			}
 
-			if (abs(user_coor.y - y) > target_range) {
+			if (abs(user_coor.y - y) > 10) {
 				isFirst = false;
 				continue;
 			}
@@ -1255,14 +1273,14 @@ BOOL DNF::runToDestination(int x, int y, bool is_room = false, int target_range 
 
 		if (x_arrived == false) {
 			if (direction_x == Keyboard_RightArrow) {
-				if (user_coor.x - x > 10) {
+				if (user_coor.x - x > target_range) {
 					MainDlg->Log(L"向右超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
 				}
 			}
 			else {
-				if (x - user_coor.x > 10) {
+				if (x - user_coor.x > target_range) {
 					MainDlg->Log(L"向左超出X范围，停止");
 					M_ReleaseAllKey(MainDlg->msdk_handle);
 					break;
@@ -1795,6 +1813,7 @@ void DNF::runToNextRoom(int direction)
 	// 查看房间是否改变
 	if (readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_X) != cur_room.x ||
 		readLong(readLong(readLong(readLong(C_ROOM_NUMBER) + C_TIME_ADDRESS) + C_DOOR_TYPE_OFFSET) + C_CURRENT_ROOM_Y) != cur_room.y) {
+		//programDelay(500);该延迟会导致跑图失误
 		MainDlg->Log(L"房间跑图一次完成");
 	}
 	else {
