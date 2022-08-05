@@ -40,7 +40,6 @@
 #define IDC_LIST3                       1025
 #define IDC_COMBO1                      1026
 #define IDC_COMBO2                      1027
-#define IDC_COMBO3                      1028
 #define IDC_CHECK7                      1030
 #define IDC_CHECK8                      1031
 #define IDC_CHECK9                      1032

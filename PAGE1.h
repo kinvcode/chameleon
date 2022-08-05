@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include "dnf.h"
 
 // PAGE1 对话框
 
@@ -24,10 +24,13 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	DNF* _DNF;
+	bool penetrate = false;
 	CButton _switch_three_speed;
 	CButton _switch_score;
 	CButton _switch_gather_items;
 	CButton _switch_hidden_user;
 	CButton _switch_cool_down;
 	CButton _switch_hook_damage;
+	afx_msg void OnBnClickedButton2();
 };

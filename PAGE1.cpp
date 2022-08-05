@@ -34,6 +34,7 @@ void PAGE1::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(PAGE1, CDialogEx)
+	ON_BN_CLICKED(IDC_BUTTON2, &PAGE1::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
 
@@ -51,4 +52,17 @@ BOOL PAGE1::OnInitDialog()
 
 
 	return TRUE;
+}
+
+void PAGE1::OnBnClickedButton2()
+{
+	if (penetrate) {
+		_DNF->penetrate(false);
+		penetrate = false;
+	}
+	else {
+		_DNF->penetrate(true);
+		penetrate = true;
+	}
+	// TODO: 在此添加控件通知处理程序代码
 }

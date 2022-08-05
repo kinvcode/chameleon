@@ -751,10 +751,10 @@ UINT autoThread(LPVOID pParam)
 								MainDlg->Log(L"再次挑战");
 								if (Gabriel >= 30) {
 									M_KeyPress(MainDlg->msdk_handle, Keyboard_ESCAPE, 2);
-									M_KeyPress(MainDlg->msdk_handle, Keyboard_RightControl, 1);
+									M_KeyPress(MainDlg->msdk_handle, Keyboard_F10, 1);
 								}
 								else {
-									M_KeyPress(MainDlg->msdk_handle, Keyboard_RightControl, 1);
+									M_KeyPress(MainDlg->msdk_handle, Keyboard_F10, 1);
 								}
 							}
 							if (Gabriel == 30)
@@ -809,7 +809,8 @@ UINT autoThread(LPVOID pParam)
 			}
 		}
 
-		dnf->programDelay(300);
+		//dnf->programDelay(300);
+		Sleep(300);
 	}
 	return 0;
 }
@@ -854,7 +855,8 @@ UINT userPointerThread(LPVOID pParam)
 			// 选择角色
 			statusChange = false;
 		}
-		dnf->programDelay(300);
+		//dnf->programDelay(300);
+		Sleep(300);
 	}
 	return 0;
 }
@@ -953,7 +955,8 @@ void DNF::gatherItemsByItems(std::vector<DUNGEONOBJ> items)
 	if (length > 0)
 	{
 		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
-		programDelay(150);
+		//programDelay(150);
+		Sleep(150);
 		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 116,21 }));
 	}
 }
@@ -1009,7 +1012,8 @@ void DNF::gatherAll()
 	if (item_quantity > 0)
 	{
 		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 117,21 }));
-		programDelay(150);
+		//programDelay(150);
+		Sleep(150);
 		writeByteArray(C_AUTO_PICKUP, makeByteArray({ 116,21 }));
 	}
 }
@@ -1817,7 +1821,8 @@ void DNF::runToNextRoom(int direction)
 		MainDlg->Log(L"房间跑图一次完成");
 	}
 	else {
-		programDelay(100);
+		Sleep(100);
+		//programDelay(100);
 		handleEvents();
 
 		runToDestination(calc_x, calc_y, true, 2);

@@ -226,6 +226,7 @@ void CchameleonDlg::OnBnClickedButton1()
 	}
 	else {
 		// 初始化DNF
+		page1._DNF = _DNF;
 		page2._DNF = _DNF;
 
 		// 初始化tab控件
